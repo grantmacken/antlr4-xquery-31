@@ -33,15 +33,23 @@ I use these test fixtures when I am working on the g4 files.  e.g.
 make
 make show-tokens TEST=VersionDecl
 make show-gui TEST=VersionDecl
-
 ```
 
 The above example will build, 
 then show the tokens produced by the lexer  using the VersionDecl fixture,
 then show the AST tree  produced by the parser
 
+## Notes:
+
+In the lexer I have made heavy use modes
+
+Foe example the symbols for SequenceType OccurrenceIndicators "?", "*" and "+" also 
+ appear in other contexts ... todo
+
+  
 
 
 
 
+OccurrenceIndicator 	   ::=    
 

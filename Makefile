@@ -9,7 +9,7 @@ TRACE := XQuery module -trace ../fixtures/
 DIAGNOSTICS := XQuery module -diagnostics ../fixtures/
 
 
-# Tests from https://www.w3.org/TR/xquery-31
+# Tests from https://www.w3.org/R/xquery-31
 # test names derived from hash 
 # https://www.w3.org/TR/xquery-31/#doc-xquery31-VersionDecl
 # -> fixture test name VersionDecl
@@ -33,14 +33,14 @@ default:
 .PHONY: test
 test:	
 	@cd build; $(call test-tokens,VersionDecl) 
-	@cd build; $(call test-tokens,ModuleDecl)
-	@cd build; $(call test-tokens,BoundarySpaceDecl)  
-	@cd build; $(call test-tokens,DefaultCollationDecl) 
-	@cd build; $(call test-tokens,BaseURIDecl) 
-	@cd build; $(call test-tokens,ConstructionDecl) 
-	@cd build; $(call test-tokens,OrderingModeDecl) 
-	@cd build; $(call test-tokens,EmptyOrderDecl) 
-	@cd build; $(call test-tokens,CopyNamespacesDecl) 
+	@#cd build; $(call test-tokens,ModuleDecl)
+	@#cd build; $(call test-tokens,BoundarySpaceDecl)  
+	@#cd build; $(call test-tokens,DefaultCollationDecl) 
+	@#cd build; $(call test-tokens,BaseURIDecl) 
+	@#cd build; $(call test-tokens,ConstructionDecl) 
+	@#cd build; $(call test-tokens,OrderingModeDecl) 
+	@#cd build; $(call test-tokens,EmptyOrderDecl) 
+	@#cd build; $(call test-tokens,CopyNamespacesDecl) 
 	@echo ' - TODO! DecimalFormatDecl'
 	@cd build; $(call test-tokens,SchemaImport) 
 	@cd build; $(call test-tokens,ModuleImport) 
