@@ -41,15 +41,25 @@ then show the AST tree  produced by the parser
 
 ## Notes:
 
-In the lexer I have made heavy use modes
+In the lexer I have made heavy use modes.
 
-Foe example the symbols for SequenceType OccurrenceIndicators "?", "*" and "+" also 
- appear in other contexts ... todo
+For example the symbols for SequenceType OccurrenceIndicators "?", "*" and "+" also 
+ appear in other contexts. Since the OccurrenceIndicators are bound to Sequencetype.
+
+ ' ( 4 treat as item()+ ) - 5 '
+The 'treat' will goto mode(INSTANCE),
+where it may consume 'as' which will push it into mode(SEQUENCE_TYPE), 
+which will pop back to mode(INSTANCE) where it may consume an Occurrence Indicator.
+If it consumes an ')' it will pop back to default.
+
+This open close mode movement, depends on the expression 'treat as item()+'
+being enclosed in parentheses, so I might make this parentheses enclosure for instanceofExpr and treatExpr a parser requirement.
+
+
+
+ 
+
 
   
-
-
-
-
-OccurrenceIndicator 	   ::=    
+ 
 

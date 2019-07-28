@@ -1,61 +1,19 @@
 lexer grammar XQueryLexer;
-
-/*
-NOTES
------
-https://stackoverflow.com/questions/1631396/what-is-an-xsncname-type-and-when-should-it-be-used
-NCName  "non-colonized name"
-The practical restrictions of NCName are that it cannot contain several symbol characters like 
-:, @, $, %, &, /, +, ,, ;, whitespace characters or different parenthesis. 
-Furthermore an NCName cannot begin with a 
-number, dot or minus character although they can appear later in an NCName.
-The following values must be NCNames (not qualified names):
-
-    namespace prefixes
-    values representing an ID
-    values representing an IDREF
-    values representing a NOTATION
-    processing instruction targets
-    entity names
-
-
- */
-
-
 // Tokens declared but not defined
 // tokens declared in the tokens section 
 // take precedence over those defined in normal lexer rules
 
 tokens {
-	Order,
-	Namespace,
-	Default,  // (switchExpr  typeswitchExpr ) and mode PROLOG DefaultCollationDecl
-	Element,
-	Function,
-	Variable,
 	Annotate,
-    DFPropertyName,
-	Bind, // := Operator
-	Return, 
 	WildCard, 
 	EscapeApos,
 	EscapeQuot,
-	Quot,
 	QuotStart,
 	QuoteContentChar,
 	QuotEnd,
-	Apos,
 	AposStart,
 	AposContentChar,
 	AposEnd,
-	URILiteral,
-	DoubleCurlyOpen,
-    DoubleCurlyClose,
-	StringConstructorOpen,            // StringConstructor
-	StringConstructorClose,              // StringConstructor
-	StringConstructorInterpolationOpen,  // StringConstructor
-	StringConstructorInterpolationClose, // StringConstructor
-	StringConstructorChars,              // StringConstructor
 	// XML
 	TagStartOpen, 
 	TagStartClose,
@@ -68,23 +26,13 @@ tokens {
 	CharRef, // TODO also in StringLiteral
     // XQUERY tokens  
 	// tests
-	AnyMapTest,
-	QName,
 	EmptySequence,
 	OccurrenceIndicator,
-	ContentChar,
-	URILiteral,
-	QNameToken,
-    VarPrefix,
 	Param,
 	SymEquals,
-	SymVerticalBar,
-	SymAngleOpen, // xml tag or less than
 	ValueComparison,  
 	GeneralComparison,
-	NodeComparison,
-	Then,        // operator
-	Else        // operator
+	NodeComparison
 }  
 
 // start DEFAULT MODE
@@ -126,13 +74,6 @@ Greatest:   'greatest';     // OrderModifier , also defined in mode PROLOG Empty
 Least:      'least';           // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
 Count:      'count';           // CountClause
 Where:      'where';           // WhereClause
-/* 
-TODO
-as  SequenceType:
-   as  SingleType:
-   as  ItemType 
-   'case' ( '$' VarName 'as' )? SequenceTypeUnion 
- */
 As:       'as' ; // TypeDeclarationsequenceTypeUnion InlineFunctionExpr:
 By:       'by' ; // GroupByClause OrderByClause
 
@@ -232,14 +173,11 @@ NamedFunctionRef: QName '#' IntegerLiteral;  // FunctionItemExpr
 Map:   'map';      // MapConstructor         MapTest/ (AnyMapTest | TypedMapTest)
 Array: 'array' ;  // CurlyArrayConstructor  ArrayTest/ ( AnyArrayTest TypedArrayTest)
 
-
-
-
-StringConstructorOpen:   '``['   -> type(StringConstructorOpen),pushMode( STRING_CONSTRUCTOR );
+StringConstructorOpen:   '``['   -> pushMode( STRING_CONSTRUCTOR );
 // StringConstructorClose @see mode STRING_CONSTRUCTOR 
 // StringConstructorInterpolationOpen @see mode STRING_CONSTRUCTOR
-// SC_StringConstructorInterpolationOpen: '`{'  -> type(StringConstructorInterpolationOpen),pushMode(DEFAULT_MODE) ;
-StringConstructorInterpolationClose: '}`' -> type(StringConstructorInterpolationClose),mode( STRING_CONSTRUCTOR ) ;  // back into STRING_CONSTRUCTOR 
+StringConstructorInterpolationOpen: '`{'  -> pushMode(DEFAULT_MODE) ;
+StringConstructorInterpolationClose: '}`' -> mode( STRING_CONSTRUCTOR ) ;  // back into STRING_CONSTRUCTOR 
 
 SquareOpen: '[';  // SquareArrayConstructor:
 SquareClose: ']';  // SquareArrayConstructor:
@@ -274,8 +212,8 @@ QuestionMark: '?';  // ref:  in CastExpr CastableExpr
 SymAt: '@';        //  AbbrevForwardStep:
 SymBang: '!';     //   SimpleMapExpr:
 Comma: ',';
-Quot: '"' -> type(QuotStart),pushMode(QUOT_COMMON_CONTENT);
-Apos: '\''  -> type(AposStart),pushMode(APOS_COMMON_CONTENT);
+QuotQuotStart: '"' -> pushMode(QUOT_COMMON_CONTENT);
+AposStart: '\''    -> pushMode(APOS_COMMON_CONTENT);
 IntegerLiteral: Digits;    //                        -> mode(OPERATOR_STATE);
 DecimalLiteral: (('.' Digits) | (Digits '.' '0'..'9'*)); // -> mode(OPERATOR_STATE);
 DoubleLiteral: ('.' Digits | Digits ('.' [0-9]*)?) [eE] [+-]? Digits; //-> mode(OPERATOR_STATE);
@@ -405,8 +343,8 @@ mode STRING_CONSTRUCTOR;  // TODO
 SC_StringConstructorInterpolationOpen: '`{'  -> type(StringConstructorInterpolationOpen), mode(DEFAULT_MODE);
 // a StringConstructor in a string constuctor so pop onto same stack
 SC_StringConstructorOpen:   '``['  -> type(StringConstructorOpen), pushMode(STRING_CONSTRUCTOR) ; 
-SC_StringConstructorClose:  ']``'   -> type(StringConstructorClose), popMode ;
-SCC_StringConstructorChars: ~[\]{`]+  -> type(StringConstructorChars);  // TODO  only acknowledge doublebacktick 
+StringConstructorClose:  ']``'   -> popMode ;
+StringConstructorChars: ~[\]{`]+ ;  // TODO  only acknowledge doublebacktick 
 
 
 
@@ -414,7 +352,7 @@ mode QUOT_COMMON_CONTENT;
 QCC_EscapeQuot: '""' -> type(EscapeQuot);
 QCC_CharRef: CharRef -> type(CharRef);
 QCC_PredefinedEntityRef: PredefinedEntityRef -> type(PredefinedEntityRef);
-QCC_Apos: '\'' -> type(Apos);
+Apos: '\'' ;
 QCC_QuoteContentChar: ~["&]+ -> type(QuoteContentChar);
 QCC_EndQuot: '"' -> type(QuotEnd),popMode;
 
@@ -422,7 +360,7 @@ mode APOS_COMMON_CONTENT;
 ACC_EscapeApos : '\'\''-> type(EscapeApos) ;
 ACC_CharRef: CharRef -> type(CharRef);
 ACC_PredefinedEntityRef: PredefinedEntityRef -> type(PredefinedEntityRef);
-QCC_Quot: '"' -> type(Quot);
+Quot: '"' ;
 QCC_AposeContentChar: ~['&]+ -> type(AposContentChar);
 QCC_EndApos: '\''  -> type(AposEnd),popMode;
 
