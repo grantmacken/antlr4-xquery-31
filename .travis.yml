@@ -1,6 +1,8 @@
-sudo: required
-dist: xenial
+dist: bionic
 language: java
+branches:
+  only:
+  - master
 before_install: make before
 install: make
 script: make test
