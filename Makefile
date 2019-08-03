@@ -36,7 +36,7 @@ default:
 before: 
 	@mkdir -p $(LIB_PATH)
 	@wget https://www.antlr.org/download/$(JAR)
-	@ls .
+	@mv $(JAR) $(LIB_PATH)/
 
 .PHONY: test
 test:
