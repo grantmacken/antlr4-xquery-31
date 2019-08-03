@@ -34,7 +34,8 @@ default:
 
 .PHONY: before
 before: 
-	@cd $(LIB_PATH) && curl -O https://www.antlr.org/download/antlr-4.7.1-complete.jar
+	@mkdir -p $(LIB_PATH)
+	@cd $(LIB_PATH) &&  wget https://www.antlr.org/download/$(JAR)
 
 .PHONY: test
 test:
