@@ -10,7 +10,7 @@ This is my very green attempt to construct antlr4 Lexer and Parser files for [xQ
 I use a simple Makefile to generate build and test.
 
 
-``` 
+```bash
 # to build
 make
 # to test
@@ -29,7 +29,7 @@ should  be fixture test name `VersionDecl`
 
 I use these test fixtures when I am working on the g4 files.  e.g.
 
-```
+```bash
 make
 make show-tokens TEST=VersionDecl
 make show-gui TEST=VersionDecl
@@ -39,7 +39,7 @@ The above example will build,
 then show the tokens produced by the lexer  using the VersionDecl fixture,
 then show the AST tree  produced by the parser
 
-## Notes:
+## Notes
 
 In the lexer I have made heavy use modes.
 

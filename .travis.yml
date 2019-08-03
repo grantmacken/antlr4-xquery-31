@@ -1,0 +1,5 @@
+sudo: required
+dist: xenial
+language: minimal
+install: make
+script: make test

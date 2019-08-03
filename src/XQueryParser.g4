@@ -23,7 +23,7 @@ prolog :
 //TODO  contextItemDec   
 
 defaultNamespaceDecl: 
-    Declare Default ( Element | Function ) Namespace stringLiteral
+    Declare Default ( Element | Function ) Namespace uriLiteral
     ;
 
 setter : 
@@ -62,8 +62,8 @@ myImport:
     ;
 
 schemaImport :
-    Import Schema schemaPrefix? stringLiteral
-    ( At stringLiteral (Comma stringLiteral)*)? 
+    Import Schema schemaPrefix? uriLiteral
+    ( At uriLiteral (Comma uriLiteral)*)? 
     ;
 
 schemaPrefix : 
@@ -72,8 +72,8 @@ schemaPrefix :
     ;
 
 moduleImport :
-    Import Module ( Namespace NCName SymEquals )? stringLiteral
-    ( At stringLiteral (Comma stringLiteral)*)?
+    Import Module ( Namespace NCName SymEquals )? uriLiteral
+    ( At uriLiteral (Comma uriLiteral)*)?
     ;
 
 optionDecl:  Declare Option eQName stringLiteral;
@@ -83,7 +83,7 @@ optionDecl:  Declare Option eQName stringLiteral;
 
 
 annotatedDecl: Declare annotation* ( varDecl | functionDecl ) ;
-annotation : Annotate eQName? ( ParenOpen literal (Comma literal)* ParenClose)? ;
+annotation : Anno eQName? ( ParenOpen literal (Comma literal)* ParenClose)? ;
 varDecl: Variable VarPrefix varName typeDeclaration? ( SymBind exprSingle | External ( SymBind exprSingle )? );  // TODO
 functionDecl: Function eQName ParenOpen paramList? ParenClose ( As sequenceType )? (functionBody | External ) ;
 paramList: param (Comma param )*;
@@ -166,7 +166,7 @@ typeswitchExpr :
     Typeswitch ParenOpen expr ParenClose caseClause+ Default ( VarPrefix varName )?
     Return exprSingle ;                                                                     //  exprSingle
 caseClause : Case (VarPrefix varName As )? sequenceTypeUnion Return exprSingle ;
-sequenceTypeUnion : sequenceType ( SymVerticalBar sequenceType)* ;
+sequenceTypeUnion : sequenceType ( VBar sequenceType)* ;
 
 ifExpr : If ParenOpen expr ParenClose Then exprSingle Else exprSingle ;                     //  exprSingl
 
@@ -174,7 +174,7 @@ tryCatchExpr : tryClause catchClause+ ;
 tryClause : Try enclosedTryTargetExpr ;
 enclosedTryTargetExpr : enclosedExpr ;
 catchClause : Catch catchErrorList enclosedExpr ;
-catchErrorList : nameTest ( SymVerticalBar  nameTest)* ;
+catchErrorList : nameTest ( VBar  nameTest)* ;
 
 orExpr: andExpr ( Or andExpr )* ;
 andExpr: comparisonExpr ( And comparisonExpr )* ;
@@ -182,9 +182,8 @@ comparisonExpr:  stringConcatExpr  (( ValueComparison  | GeneralComparison  | No
 stringConcatExpr: rangeExpr ( StringConcat rangeExpr )* ;
 rangeExpr :  additiveExpr  ( RangeTo additiveExpr )? ;
 additiveExpr : multiplicativeExpr ( ( AdditivePlus | AdditiveMinus ) multiplicativeExpr )* ;
-// TODO WildCard to SymTimes  
 multiplicativeExpr : unionExpr ( ( MultiplicativeTimes | MultiplicativeDiv | MultiplicativeIdiv | MultiplicativeMod  ) unionExpr )* ;
-unionExpr : intersectExceptExpr ( ( Union | SymVerticalBar ) intersectExceptExpr )* ;
+unionExpr : intersectExceptExpr ( ( Union | VBar ) intersectExceptExpr )* ;
 intersectExceptExpr : instanceofExpr ( ( Intersect | Except) instanceofExpr )* ;
 instanceofExpr : treatExpr ( Instance Of  sequenceType )? ;
 treatExpr : castableExpr ( Treat As sequenceType )? ;
@@ -194,7 +193,8 @@ arrowExpr : unaryExpr ( Arrow arrowFunctionSpecifier argumentList )* ;
 arrowFunctionSpecifier: eQName | varRef |  parenthesizedExpr;
 unaryExpr : ( AdditivePlus | AdditiveMinus )* valueExpr ;
 valueExpr :  validateExpr   |  simpleMapExpr /* | ExtensionExpr */; // TODO EXtension Expression
-validateExpr : Validate ( ValidationMode | ( Type typeName))? enclosedExpr ;
+validateExpr : Validate ( validationMode | ( Type typeName))? enclosedExpr ;
+validationMode : ( Lax | Strict );
 // NOTE no ExtensionExpr: 
 simpleMapExpr: pathExpr ( SymBang  pathExpr )* ;       // ValueExpr SimpleMapExpr
 
@@ -217,7 +217,7 @@ reverseAxis : ( Parent | Ancestor | PrecedingSibling | Preceding | AncestorOrSel
 nodeTest :  kindTest |  nameTest ; // AbbrevForwardStep ForwardStep ReverseStep
 nameTest : eQName | wildcard ;    // CatchErrorList NodeTest
 wildcard : 
-      BracedURILiteral? WildCard
+      bracedURILiteral? Wildcard
     | NCNameWithLocalWildcard
     | NCNameWithPrefixWildcard
     ;
@@ -225,23 +225,21 @@ wildcard :
 postfixExpr : primaryExpr (predicate | argumentList | lookup)* ;  // StepExpr
 
 argumentList: ParenOpen ( argument ( Comma argument )* )?  ParenClose ; 
-argument:     exprSingle | QuestionMark ;
+argument:     exprSingle | Ques ;
 
 predicateList : predicate* ;
 predicate : SquareOpen expr SquareClose ; // PostfixExpr
-lookup : QuestionMark keySpecifier ;   // PostfixExpr
+lookup : Ques keySpecifier ;   // PostfixExpr
 
-keySpecifier : NCName | IntegerLiteral | parenthesizedExpr | WildCard ; //Lookup UnaryLookup
+keySpecifier : NCName | IntegerLiteral | parenthesizedExpr | Wildcard ; //Lookup UnaryLookup
 
 // end xPath related
-
-
 
 primaryExpr : 
       literal
      | varRef
      | parenthesizedExpr
-     | ContextItemExpr
+     | contextItemExpr
      | functionCall
      | orderedExpr
      | unorderedExpr
@@ -253,7 +251,7 @@ primaryExpr :
      | unaryLookup ;
 
 
-
+contextItemExpr: Dot; 
 parenthesizedExpr: ParenOpen  expr?  ParenClose; 
 orderedExpr:       Ordered enclosedExpr ;
 unorderedExpr:     Unordered enclosedExpr ;
@@ -302,7 +300,8 @@ enclosedURIExpr : enclosedExpr ;
 compTextConstructor : Text enclosedExpr ;
 compCommentConstructor : Comment enclosedExpr;
 compPIConstructor : ProcessingInstruction (NCName | ( CurlyOpen expr CurlyClose )) enclosedExpr ;
-functionItemExpr : NamedFunctionRef| inlineFunctionExpr ;
+functionItemExpr : namedFunctionRef | inlineFunctionExpr ;
+namedFunctionRef:  eQName Hash IntegerLiteral;
 inlineFunctionExpr : annotation* Function ParenOpen paramList? ParenClose ( As sequenceType)? functionBody ;
 // MAP And Array constructors
 mapConstructor : Map CurlyOpen (mapConstructorEntry ( Comma mapConstructorEntry)*)? CurlyClose ;
@@ -322,12 +321,12 @@ stringConstructorInterpolation : StringConstructorInterpolationOpen  expr? Strin
 
 // End Of Primary Expressions
 
-unaryLookup : QuestionMark keySpecifier;  // PrimaryExpr
+unaryLookup : Ques keySpecifier;  // PrimaryExpr
 
 
 // Types
 
-singleType : simpleTypeName QuestionMark? ; // CastExpr CastableExpr
+singleType : simpleTypeName Ques? ; // CastExpr CastableExpr
 typeDeclaration: As sequenceType;
 sequenceType: EmptySequenceTest | ( itemType  OccurrenceIndicator?);
 
@@ -364,7 +363,7 @@ piTest:            ProcessingInstruction ParenOpen
 attributeTest:    Attribute ParenOpen 
     (attribNameOrWildcard (Comma typeName)?)?
      ParenClose ;                                       // KindTest
-attribNameOrWildcard: attributeName | WildCard ;
+attribNameOrWildcard: attributeName | Wildcard ;
 schemaAttributeTest:  SchemaAttribute ParenOpen 
      attributeDeclaration 
      ParenClose ;                                         // KindTest
@@ -372,10 +371,10 @@ schemaAttributeTest:  SchemaAttribute ParenOpen
 attributeDeclaration: attributeName;  
 elementTest: Element ParenOpen 
     elementNameOrWildcard
-    ( Comma typeName  QuestionMark? )?
+    ( Comma typeName  Ques? )?
     ParenClose ;                                      // KindTest DocumentTest
 
-elementNameOrWildcard: elementName | WildCard ;
+elementNameOrWildcard: elementName | Wildcard ;
 schemaElementTest: SchemaElement ParenOpen 
     elementDeclaration 
     ParenClose ;                                     // KindTest DocumentTest
@@ -405,16 +404,19 @@ parenthesizedItemType: ParenOpen itemType ParenClose ;  // ItemType
 
 uriLiteral: stringLiteral;
 varName : eQName ;
-eQName: ( QName | URIQualifiedName );
+eQName: ( QName | uRIQualifiedName );
 literal: numericLiteral | stringLiteral;
 stringLiteral: 
       QuotStart ( CharRef | EscapeQuot | PredefinedEntityRef | QuoteContentChar | Apos )* QuotEnd
     | AposStart ( CharRef | EscapeApos | PredefinedEntityRef | AposContentChar  | Quot )* AposEnd
     ;
 
+uRIQualifiedName: bracedURILiteral NCName;
+bracedURILiteral: BracedURIOpen ( PredefinedEntityRef | BracedURIContent | CharRef )* CurlyClose ;
+
 numericLiteral: IntegerLiteral | DecimalLiteral| DoubleLiteral;	
 varRef: VarPrefix varName;
-// this equals that
-currentItem : eQName ;
-nextItem : eQName ;
-previousItem : eQName ;
+
+// currentItem : eQName ;
+// nextItem : eQName ;
+// previousItem : eQName ;

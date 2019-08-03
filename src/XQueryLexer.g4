@@ -4,8 +4,7 @@ lexer grammar XQueryLexer;
 // take precedence over those defined in normal lexer rules
 
 tokens {
-	Annotate,
-	WildCard, 
+	Wildcard,  // '*'
 	EscapeApos,
 	EscapeQuot,
 	QuotStart,
@@ -20,7 +19,6 @@ tokens {
 	TagEndOpen,
 	TagEndClose,
     QuotAttrValueContent,
-	PredefinedEntityRef,
 	DoubleCurlyOpen,  // {{ escapes for XML AND StringLiteral 
 	DoubleCurlyClose, // }}
 	CharRef, // TODO also in StringLiteral
@@ -39,10 +37,10 @@ tokens {
 WS: [ \t\r\n]+ -> channel(HIDDEN);
 Separator: ';' ; //  VarDecl: binds to expression so this will end VarDecl
 SymBind:  ':=' ; 
-// This state is patterns that occur at the beginning of an expression or subexpression
-// Push into PROLOG then pop back when we get to a seperator
-XQuery: 'xquery' -> pushMode(PROLOG);    // VersionDecl:
-Module: 'module' -> pushMode(PROLOG);
+// patterns that occur at the beginning of an expression or subexpression
+// Push then pop back when we get to a seperator
+XQuery: 'xquery' -> pushMode(VERSION_DECL);
+Module: 'module' -> pushMode(MODULE_DECL);
 // PROLOG  
 Declare: 'declare'  ->  pushMode(PROLOG) ; // BoundarySpaceDecl DefaultCollationDecl: DefaultNamespaceDecl Setter NamespaceDecl 
 Import:  'import'   ->  pushMode(PROLOG) ;
@@ -61,35 +59,30 @@ Ascending:  'ascending'  ->   mode( ORDER_BY_CLAUSE ); // OrderModifier
 Descending: 'descending' ->   mode( ORDER_BY_CLAUSE ); // OrderModifier:
 Empty:      'empty';           // OrderModifier  ForBinding/AllowingEmpty , also defined in mode PROLOG EmptyOrderDecl
 
+VarPrefix:   '$'         ->  pushMode( VAR_NAME ) ;   // VarName no whitespace after '$'
+At:          'at' ;  // forBinding contains PositionalVar ...  ref modes 'at' ModuleImport: SchemaImport
+In:          'in' ;        //  ForBinding quantifiedExpr
 
-// References
-VarPrefix: '$' ;  // VarName no whitespace after '$'
-At:         'at' ;  // forBinding contains PositionalVar ...  ref modes 'at' ModuleImport: SchemaImport
-In:         'in' ;        //  ForBinding quantifiedExpr
+Greatest:    'greatest';     // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
+Least:       'least';           // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
+Count:       'count';           // CountClause
+Where:       'where';           // WhereClause
+As:          'as' ;       // TypeDeclarationsequenceTypeUnion InlineFunctionExpr:
+By:          'by' ;       // GroupByClause OrderByClause
 
+Switch:     'switch';      // switchExpr
+Case:       'case';        // switchExpr typeswitchExpr
+Default:    'default'  ;   // switchExpr  typeswitchExpr
+Typeswitch: 'typeswitch' ; // typeswitchExpr
+Return:     'return' ;     // switchExpr  typeswitchExpr
 
+If:         'if';         //ifExpr
+Then:       'then';       //ifExpr
+Else:       'else';       //ifExpr
 
+Try:   'try'   ->   pushMode( ENCLOSED_EXPR ); // tryCatchExpr
+Catch: 'catch' ->   pushMode( CATCH_CLAUSE );  // tryCatchExpr
 
-Greatest:   'greatest';     // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
-Least:      'least';           // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
-Count:      'count';           // CountClause
-Where:      'where';           // WhereClause
-As:       'as' ; // TypeDeclarationsequenceTypeUnion InlineFunctionExpr:
-By:       'by' ; // GroupByClause OrderByClause
-
-Default:  'default'  -> type(Default); // switchExpr  typeswitchExpr
-
-Return:   'return'   -> type(Return); // switchExpr  typeswitchExpr
-Switch:     'switch';    //switchExpr
-Case:       'case';      //switchExpr typeswitchExpr
-Typeswitch: 'typeswitch' ; // -> mode(OPERATOR_STATE);  //typeswitchExpr
-
-If:   'if'; // -> mode(OPERATOR_STATE); //ifExpr
-Then: 'then'; //ifExpr
-Else: 'else'; //ifExpr
-
-Try:   'try';    // tryCatchExpr
-Catch: 'catch';  // tryCatchExpr
 
 Or:   'or';   // orExpr
 And:  'and';  /// andExpr
@@ -131,22 +124,21 @@ MultiplicativeTimes : '*';   // multiplicativeExpr
 // StringConcat
 StringConcat: '||';
 Union : 'union';         // unionExpr
-SymVerticalBar : '|';  // unionExpr
+VBar : '|';  // unionExpr
 Intersect : 'intersect'; // intersectExceptExpr
 Except : 'except';       // intersectExceptExpr
  
 // Range
 RangeTo: 'to'; //rangeExpr
 
-Instance: 'instance'   -> mode( INSTANCE ) ;     // instanceofExpr
-Treat:    'treat'      -> pushMode( INSTANCE ) ; // treatExpr
-Castable: 'castable'   -> pushMode( CASTING ) ;  // castableExpr
-Cast:     'cast'       -> pushMode( CASTING ) ;  // castExpr
+Instance: 'instance'    -> mode( INSTANCE ) ;     // instanceofExpr
+Treat:    'treat'       -> pushMode( INSTANCE ) ; // treatExpr
+Castable: 'castable'    -> pushMode( AS_TYPE_NAME ) ;  // castableExpr
+Cast:     'cast'        -> pushMode( AS_TYPE_NAME ) ;  // castExpr
 Arrow:      '=>';             // arrowExpr
-Validate:   'validate';       //  TODO validateExpr
-Type:       'type';           // validateExpr
+Validate:   'validate'  -> pushMode( VALIDATE_EXPR ) ;     //  TODO validateExpr
 Ordered:    'ordered'   -> pushMode( ENCLOSED_EXPR );  // orderedExpr   also in mode PROLOG OrderingModeDecl
-Unordered:  'unordered' -> pushMode( ENCLOSED_EXPR );   // unorderedExpr also in mode PROLOG OrderingModeDecl
+Unordered:  'unordered' -> pushMode( ENCLOSED_EXPR );  // unorderedExpr also in mode PROLOG OrderingModeDecl
 
 /*  
 CONSTRUCTORS and Kind Tests
@@ -165,7 +157,6 @@ ProcessingInstruction: 'processing-instruction' ; // CompPIConstructor: PITest
 
  // functionItemExpr: namedFunctionRef | inlineFunctionExpr
 Function: 'function' -> pushMode( INLINE_FUNCTION ) ; // InlineFunctionExpr: AnyFunctionTest TypedFunctionTest:
-NamedFunctionRef: QName '#' IntegerLiteral;  // FunctionItemExpr
 
 // also in modes FunctionDecl: DefaultNamespaceDecl 
 
@@ -198,36 +189,33 @@ CurlyClose: '}' -> popMode ;               // EnclosedExpr MapConstructor
  */
 
 
-ParenOpen: '('  ; // -> pushMode(DEFAULT_MODE) ;
-ParenClose: ')' ; // -> popMode ;
+ParenOpen: '('  ;  // ParenthesizedExpr
+ParenClose: ')' ;  // ParenthesizedExpr
 
-
-// TODO dedup  
-// also as Lookup UnaryLookup operator  in PostfixExpr:
-// also  as DocumentTest KindTest
-// ArgumentList  Argument ::= ExprSingle '?'
-// which is reference in ArrowExpr FunctionCall PostfixExpr
-// as OccurrenceIndicator:
-QuestionMark: '?';  // ref:  in CastExpr CastableExpr
+Dot:  '.' ; // ContextItemExpr
+Hash: '#' ;
+Anno: '%' ;
+Ques: '?';  // ref:  in CastExpr CastableExpr
 SymAt: '@';        //  AbbrevForwardStep:
 SymBang: '!';     //   SimpleMapExpr:
 Comma: ',';
-QuotQuotStart: '"' -> pushMode(QUOT_COMMON_CONTENT);
-AposStart: '\''    -> pushMode(APOS_COMMON_CONTENT);
-IntegerLiteral: Digits;    //                        -> mode(OPERATOR_STATE);
-DecimalLiteral: (('.' Digits) | (Digits '.' '0'..'9'*)); // -> mode(OPERATOR_STATE);
-DoubleLiteral: ('.' Digits | Digits ('.' [0-9]*)?) [eE] [+-]? Digits; //-> mode(OPERATOR_STATE);
-// DoubleLiterIl: (('.' Digits) | (Digits ('.' '0'..'9'*)?)) ('e' | 'E') ('+'|'-')? Digits -> mode(OPERATOR_STATE);
 
+// Literals
+QuotStart: '"'  -> pushMode(QUOT_COMMON_CONTENT);
+AposStart: '\'' -> pushMode(APOS_COMMON_CONTENT);
+IntegerLiteral: Digits;
+DecimalLiteral: (('.' Digits) | (Digits '.' '0'..'9'*)); 
+DoubleLiteral: ('.' Digits | Digits ('.' [0-9]*)?) [eE] [+-]? Digits; 
+PredefinedEntityRef : '&' ( 'lt' | 'gt' | 'amp' | 'quot' | 'apos' ) ';' ;
+// PredefinedEntityRef : '&' -> more;
 
 NCNameWithLocalWildcard:    NCName ':' '*' ;
 NCNameWithPrefixWildcard:   '*' ':' NCName ;
-//WildCard:  '*';
 
 
 //  Expressions
 
-ValidationMode : 'lax' | 'strict' ;  
+
 // XPATH
 DoubleForwardSlash: '//' ; //PathExpr: RelativePathExpr:
 ForwardSlash:       '/' ;     //PathExpr: RelativePathExpr:
@@ -243,8 +231,8 @@ Ancestor: 'ancestor' ;                   //ReverseAxis
 PrecedingSibling: 'preceding-sibling' ;  //ReverseAxis
 Preceding: 'preceding' ;                 //ReverseAxis
 AncestorOrSelf: 'ancestor-or-self' ;     //ReverseAxis
+
 AbbrevReverseStep : '..';
-ContextItemExpr :   '.' ; 
 
 // Tests
 // order by xquery-31 tokenizer.ebnf
@@ -257,13 +245,12 @@ XML_PRAGMA: '(#' WS? (NCName ':')? NCName (WS .*?)? '#)';
 XQDocComment: '(' ':' '~'(XQComment | '(' ~[:] | ':' ~[)] | ~[:(])* ':'* ':'+ ')' -> channel(HIDDEN);
 XQComment: '(' ':' ~'~' (XQComment | '(' ~[:] | ':' ~[)] | ~[:(])* ':'* ':'+ ')' -> channel(HIDDEN);
 
-
 // Expanded Qualified Name 
 // EQName : QName | URIQualifiedName;
-// Qualified Name   
-//NOTE  expression declare function  'QName' will transitions to operator state
-QName : ((NCName ':' NCName) | NCName) ;//-> mode(OPERATOR_STATE);
+// Qualified Name 
 Colon: ':';
+QName : ((NCName Colon NCName) | NCName) ;
+BracedURIOpen: 'Q{' ->  pushMode( URI_QUALIFIED_NAME ) ;
 
 // According to http://www.w3.org/TR/REC-xml-names/#NT-NCName, it is 'an XML Name, minus the ":"'
 NCName : NameStartChar NameChar*;
@@ -273,15 +260,7 @@ NCName : NameStartChar NameChar*;
 // S ::= (#x20 | #x9 | #xD | #xA)+
 
 
-URIQualifiedName :
-     BracedURILiteral NCName
-	 ;
 
-BracedURILiteral: 
-	'Q' '{' ( PredefinedEntityRef
-	| CharRef 
-	| [^&{}] )* '}'
-	;
 
 
 
@@ -324,7 +303,6 @@ fragment Names : Name ('\u0020' Name)* ;
 fragment Nmtoken : (NameChar)+ ;
 fragment Nmtokens : Nmtoken ('\u0020' Nmtoken)* ;
 
-fragment PredefinedEntityRef : '&' ( 'lt' | 'gt' | 'amp' | 'quot' | 'apos' ) ';' ;
 
 // Characters:
 fragment Char : 
@@ -337,6 +315,17 @@ fragment Char :
 
 // LEXER MODES
 
+mode VERSION_DECL;
+VD_WS: WS -> type(WS),channel(HIDDEN);
+Version:  'version' ; 
+Encoding: 'encoding' ; 
+VD_QuoteStringLiteral:  '"'   -> type(QuotStart),pushMode(QUOT_COMMON_CONTENT) ;
+VD_AposStringLiteral:   '\''  -> type(AposStart),pushMode(APOS_COMMON_CONTENT) ; 
+VD_Separator:           ';'   -> type(Separator),popMode ; 
+
+mode MODULE_DECL;
+MOD_WS: WS -> type(WS),channel(HIDDEN);
+MOD_Namespace: 'namespace' -> type(Namespace),mode(NAMESPACE_KEYWORD); // NamespaceDecl
 
 // whitespace explicit PUSH POP CONSTRUCTORS
 mode STRING_CONSTRUCTOR;  // TODO 
@@ -344,9 +333,22 @@ SC_StringConstructorInterpolationOpen: '`{'  -> type(StringConstructorInterpolat
 // a StringConstructor in a string constuctor so pop onto same stack
 SC_StringConstructorOpen:   '``['  -> type(StringConstructorOpen), pushMode(STRING_CONSTRUCTOR) ; 
 StringConstructorClose:  ']``'   -> popMode ;
-StringConstructorChars: ~[\]{`]+ ;  // TODO  only acknowledge doublebacktick 
+StringConstructorChars: ~[\]{`]+ ;  // TODO  only acknowledge doublebacktick
 
 
+// mode PREDEFINED_ENTITY_REF;
+// PER_LT: ( 'lt' | 'gt' | 'amp' | 'quot' | 'apos' ) -> more;
+// PER_Sep: ';' -> type(PredefinedEntityRef);
+
+
+mode URI_QUALIFIED_NAME;  /* ws: explicit */
+BRL_CharRef: CharRef -> type(CharRef);
+BRL_PredefinedEntityRef: PredefinedEntityRef -> type(PredefinedEntityRef) ;
+BracedURIContent: ~[&{}]+ ;
+BRL_CurlyClose: '}' ->  type(CurlyClose),mode(NCNAME);
+
+mode NCNAME; /* ws: explicit */
+NCN_NCName: NCName -> type(NCName),popMode ;
 
 mode QUOT_COMMON_CONTENT;
 QCC_EscapeQuot: '""' -> type(EscapeQuot);
@@ -373,8 +375,7 @@ Setter
 */
 mode PROLOG;
 PROLOG_WS: WS -> type(WS),channel(HIDDEN);
-Version:  'version' ;  //VersionDecl:
-Encoding: 'encoding' ; // VersionDecl:
+
 PROLOG_Namespace: 'namespace' -> type(Namespace),mode(NAMESPACE_KEYWORD); // NamespaceDecl
 // Import 
 Schema:        'schema'   -> mode(NAMESPACE_KEYWORD);               //SchemaImport:
@@ -420,20 +421,19 @@ Preserve: 'preserve'; // BoundarySpaceDecl ConstructionDecl CopyNamespacesDecl
 Strip:    'strip';       // BoundarySpaceDecl ConstructionDecl
 PROLOG_Equals: '=' -> type(SymEquals);
 
-Option: 'option' ; // optionDecl
+Option: 'option'   -> pushMode(VAR_REF) ; // optionDecl
 
 // TODO //ContextItemDecl:
 Context: 'context' ;   //ContextItemDecl:
-External: 'external';  // TODO
+External: 'external';  // TODO VarDecl
 
 PROLOG_QuotAttr:  '"'   -> type(QuotStart),pushMode(QUOT_COMMON_CONTENT); // DefaultCollationDecl BaseURIDecl
 PROLOG_AposAttr:  '\''  -> type(AposStart),pushMode(APOS_COMMON_CONTENT); // DefaultCollationDecl BaseURIDecl
 
-
 // AnnotatedDecl:   NOTE annotation can occur elsewere ( FunctionTest |  InlineFunctionExpr )
 // So we push then pop back to PROLOG mode
-// PROLOG_Annotate: '%' -> type( Annotate ), pushMode(ANNOTATION); // 
-// AnnotatedDecl  ( VarDecl | FunctionDecl )
+PROLOG_Annotate: '%' -> type( Anno ), pushMode(ANNOTATION) ; 
+// AnnotatedDecl  ( VarDecl | FunctionDecl ) 
 // VarDecl NOTE file:///home/gmack/projects/grantmacken/grammar-xQuery/notes/xquery-31/index.html#VarDecl
 
 PROLOG_Function:   'function'  -> type(Function), pushMode(VAR_REF) ;  // ,mode(FUNCTION_DECLARATION); // FunctionDecl 
@@ -456,15 +456,21 @@ PROLOG_CurlyOpen: '{'   -> type(CurlyOpen), pushMode(DEFAULT_MODE) ;  // always 
 PROLOG_Sep:       ';'   -> type(Separator), popMode;                 // all mode PROLOG declarations pop back to default 
 
 mode VAR_REF;  //FunctionDecl InlineFunctionExpr
-VAR_WS: WS -> type(WS),channel(HIDDEN);
-VAR_Prefix: '$' -> type(VarPrefix);
+REF_WS: WS -> type(WS),channel(HIDDEN);
+REF_Prefix: '$' -> type(VarPrefix);
+REF_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),mode( URI_QUALIFIED_NAME ) ; // also pops
+REF_Name: QName -> type(QName),popMode;
+
+mode VAR_NAME;  //
+VAR_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),mode( URI_QUALIFIED_NAME ) ; // also pops
 VAR_Name: QName -> type(QName),popMode;
+
 
 mode PARAM_LIST;  // functionDecl InlineFunctionExpr
 PARAM_WS:     WS  -> type(WS),channel(HIDDEN);
 // PL_POpen: '('  -> type(ParenOpen);
 PARAM_As: 'as' -> type(As), pushMode(SEQUENCE_TYPE); // should pop back here
-PARAM_VarPrefix: '$' -> type(VarPrefix), pushMode(VAR_REF);
+PARAM_VarPrefix: '$' -> type(VarPrefix), pushMode(VAR_NAME);
 //Item:      'item' -> mode( SIMPLE_TYPE ) ;
 PARAM_Comma:  ','  -> type(Comma);
 PARAM_OnceOrZero: '?'  -> type(OccurrenceIndicator) ;  
@@ -474,7 +480,7 @@ PL_PClose:  ')' -> type(ParenClose), popMode;
 
 mode FOR_CLAUSE; // ForBinding, LetBinding, QuantifiedExpr may contain TypeDeclaration  
 FOR_WS:     WS  -> type(WS),channel(HIDDEN);
-FOR_VarPrefix:  '$'     -> type(VarPrefix), pushMode(VAR_REF);
+FOR_VarPrefix:  '$'     -> type(VarPrefix), pushMode(VAR_NAME);
 // start TypeDeclaration pattern
 FOR_As:         'as'    -> type(As), pushMode(SEQUENCE_TYPE); // should pop back here
 FOR_OnceOrZero: '?'     -> type(OccurrenceIndicator) ;  
@@ -488,7 +494,7 @@ FOR_In:         'in'    -> type(In), mode(DEFAULT_MODE); // seek ExprSingle
 
 mode LET_CLAUSE; 
 LET_WS: WS  -> type(WS),channel(HIDDEN);
-LET_VarPrefix:  '$'     -> type(VarPrefix), pushMode(VAR_REF);
+LET_VarPrefix:  '$'     -> type(VarPrefix), pushMode(VAR_NAME);
 // start TypeDeclaration pattern
 LET_As:         'as'    -> type(As), pushMode(SEQUENCE_TYPE); // should pop back here
 LET_OnceOrZero: '?'     -> type(OccurrenceIndicator) ;  
@@ -499,7 +505,7 @@ LET_Bind:       ':='    -> type(SymBind), mode(DEFAULT_MODE) ;  // seek ExprSing
 
 mode QUANTIFIED_EXPR;
 QE_WS: WS  -> type(WS),channel(HIDDEN);
-QE_VarPrefix:  '$'     -> type(VarPrefix), pushMode(VAR_REF);
+QE_VarPrefix:  '$'     -> type(VarPrefix), pushMode(VAR_NAME);
 // start TypeDeclaration pattern
 QE_As:         'as'    -> type(As), pushMode(SEQUENCE_TYPE); // should pop back here
 QE_OnceOrZero: '?'     -> type(OccurrenceIndicator) ;  
@@ -512,7 +518,7 @@ QE_In:         'in'    -> type(In), mode(DEFAULT_MODE); // seek ExprSingle
 mode GROUP_BY_CLAUSE; //  
 GROUP_WS: WS  -> type(WS),channel(HIDDEN);
 GROUP_By:        'by'   -> type(By) ; // GroupByClause OrderByClause
-GROUP_VarPrefix: '$'    -> type(VarPrefix), pushMode(VAR_REF); // GroupingVariable:
+GROUP_VarPrefix: '$'    -> type(VarPrefix), pushMode(VAR_NAME); // GroupingVariable:
 GROUP_Comma: ','    -> type(Comma) ; 
 // start TypeDeclaration pattern
 GROUP_As:         'as'    -> type(As), pushMode(SEQUENCE_TYPE); // should pop back here
@@ -555,6 +561,17 @@ ORDER_Group:     'group'    ->  type(Group), mode(GROUP_BY_CLAUSE);  // GroupByC
 ORDER_Count:     'count'   ->   type(Count), mode(DEFAULT_MODE);  // CountClause::
 ORDER_Return:    'return'  ->   type(Return),mode(DEFAULT_MODE);     // ReturnClause:
 
+mode CATCH_CLAUSE; // nameTest
+CATCH_WS: WS  -> type(WS),channel(HIDDEN);
+CATCH_VBar:  '|'     -> type(VBar) ;
+CATCH_QName:         QName -> type(QName) ; 
+CATCH_BracedURIOpen: 'Q{'  -> type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ; // come back here
+CATCH_NCNameWithLocalWildcard:  NCNameWithLocalWildcard  -> type(NCNameWithLocalWildcard);
+CATCH_NCNameWithPrefixWildcard: NCNameWithPrefixWildcard -> type(NCNameWithPrefixWildcard);
+CATCH_Wildcard:  '*' -> type( Wildcard ) ;
+CATCH_CurlyOpen:  '{'  -> type(CurlyOpen), mode(DEFAULT_MODE) ;  
+// in default '}' will pop off this CATCH_CLAUSE stack
+
 
 
 mode COLLATION;
@@ -566,25 +583,7 @@ COLLATION_AposAttr:  '\''  -> type(AposStart),mode(APOS_COMMON_CONTENT); // pop 
 mode ENCLOSED_EXPR;
 ENCLOSED_WS: WS  -> type(WS),channel(HIDDEN);
 ENCLOSED_CurlyOpen:  '{'   -> type(CurlyOpen), mode( DEFAULT_MODE ); // pop back into origin
-
-// TODO does not cater for Comma  'for' ForBinding ( ',' ForBinding )*
-
-// mode LET_TYPE_DECLARATION; // ForBinding, LetBinding may contain TypeDeclaration  
-// LTD_WS:     WS  -> type(WS),channel(HIDDEN);
-// LTD_VarPrefix:  '$'     -> type(VarPrefix);
-// VTD_Name: QName         -> type(QName),  pushMode(VAR_REF_AS) ;
-// VTD_OnceOrZero: '?'     -> type(OccurrenceIndicator) ;  
-// VTD_ZeroOrMore: '*'     -> type(OccurrenceIndicator) ;
-// VTD_OneOrMore:  '+'     -> type(OccurrenceIndicator) ;
-// VTD_Bind:       ':='    -> type(SymBind), mode( DEFAULT_MODE ) ;           // pops into default
-
-// mode VAR_REF_AS;  //
-// VRA_WS: WS -> type(WS),channel(HIDDEN);
-// VRA_As:   'as' -> type(As),mode(SEQUENCE_TYPE); // pops into LET_TYPE_DECLARATION
-// VRA_Bind: ':=' -> type(SymBind), popMode;       // pops into default
-
-
-
+// in default '}' will pop off this ENCLOSED_EXPR stack
 
 mode INLINE_FUNCTION;  // PrimaryExpr/FunctionItemExpr ( InlineFunctionExpr )
 IFUNC_WS:     WS  -> type(WS),channel(HIDDEN);
@@ -608,13 +607,23 @@ INSTANCE_Comma:      ','  -> type(Comma),     mode(DEFAULT_MODE) ; // end of exp
 INSTANCE_PClose:     ')'  -> type(ParenClose),mode(DEFAULT_MODE) ; // end of enclosed expression
 // TODO depends on separators ')' ','
 
-
-mode CASTING; // CastableExpr CastExpr
+mode AS_TYPE_NAME; // (CastableExpr | CastExpr ) /singleType/TypeName
 CASTING_WS: WS -> type(WS),channel(HIDDEN);
-CASTING_AS:     'as'   -> type(As) ;
-CASTING_QName:  QName  -> type(QName) ;                // SingleType:
-// TODO URIQualifiedName
-CASTING_QMark:  '?'    -> type(QuestionMark), popMode ; //SingleType:
+CASTING_AS:            'as'  -> type(As) ;
+CASTING_QName:        QName  -> type(QName), popMode  ;  
+CASTING_BracedURIOpen: 'Q{'  -> type(BracedURIOpen),mode( URI_QUALIFIED_NAME ) ; // will pop back to origin
+// CASTING_QMark:  '?'  should be picked up in default
+
+mode VALIDATE_EXPR;  // pushed onto VALIDATE_EXPR stack
+VALIDATE_WS: WS -> type(WS),channel(HIDDEN);
+Lax:     'lax' ;
+Strict:  'strict' ;
+Type:    'type' ;  
+VALIDATE_QName:         QName -> type(QName) ; 
+VALIDATE_BracedURIOpen: 'Q{'  -> type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ; // come back here
+VALIDATE_CurlyOpen:     '{'   -> type(CurlyOpen), mode( DEFAULT_MODE ) ; 
+
+ // in default '}' will pop off this VALIDATE_EXPR stack
 
 /* TODO
  OccurrenceIndicator
@@ -642,7 +651,7 @@ referenced by:
 */
 mode SEQUENCE_TYPE;  // as SequenceType:
 ST_WS: WS -> type(WS),channel(HIDDEN);
-// ST_Vbar:  '|' -> type(SymVerticalBar) ;
+// ST_Vbar:  '|' -> type(VBar) ;
 EmptySequenceTest: 'empty-sequence' '(' ')'  -> popMode ;
 /* Everything else below is an ItemType  */
 Item:  'item' '(' ')'            ->              popMode ;  // itemType:
@@ -662,26 +671,27 @@ AnyArrayTest:    'array' '(' '*' ')'     ->             popMode ;
 ST_TypedFunctionTest: 'function' ->     type(Function), mode(TYPED_FUNCTION_TEST) ;//  FunctionTest/TypedFunctionTest InlineFunctionExpr
 ST_TypedMapTest:    'map'     ->             type(Map), mode(TYPED_MAP_TEST); // mapTest/TypedMapTest
 ST_Array:  'array'   ->                    type(Array), mode(TYPED_ARRAY_TEST) ;      // arrayTest/TypedArrayTest
-ST_QName:  QName   -> type(QName), popMode ;                       // ItemType/AtomicOrUnionType
-// TODO URIQualifiedName:
 // TODO ParenthesizedItemType
+ST_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),mode( URI_QUALIFIED_NAME ) ; // like QName will pop out
+ST_QName:  QName   -> type(QName), popMode ;                                // ItemType/AtomicOrUnionType
 
 
 
 mode ELEMENT_ATTR_TEST;
 EAT_WS: WS -> type(WS),channel(HIDDEN);
 EAT_ParenOpen:  '('  -> type(ParenOpen);
-EAT_Wildcard:   '*'  -> type(WildCard);
-EAT_QName:    QName  -> type(QName); // TODO URIQualifiedName:
+EAT_Wildcard:   '*'  -> type(Wildcard);
+EAT_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ; // come back here
+EAT_QName:    QName  -> type(QName); 
 EAT_Comma:       ',' -> type(Comma) ;
-ElementTypeName: '?' -> type(QuestionMark) ;  /// https://www.w3.org/TR/xquery-31/#doc-xquery31-ElementTest
+ElementTypeName: '?' -> type(Ques) ;  /// https://www.w3.org/TR/xquery-31/#doc-xquery31-ElementTest
 EAT_ParenClose:  ')' -> type(ParenClose), popMode;
 
 mode SIMPLE_TYPE;  // as SequenceType:
 SIMPLE_ParenOpen:  '('  -> type(ParenOpen);
-//SIMPLE_Wildcard:   '*'  -> type(WildCard);
+//SIMPLE_Wildcard:   '*'  -> type(Wildcard);
 SIMPLE_QName:   QName   -> type(QName); // TypedMapTest SchemaAttributeTest:
-// TODO URIQualifiedName:
+SIMPLE_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ; // come back here
 SIMPLE_ParenClose:  ')' -> type(ParenClose), popMode ;
 // will pop backe to  PARAM_LIST 
 
@@ -709,12 +719,13 @@ TFT_As: 'as' -> type(As), mode(SEQUENCE_TYPE);
 // "map" "(" AtomicOrUnionType "," SequenceType ")" 	
 mode TYPED_MAP_TEST;
 TMT_ParenOpen:  '('  -> type(ParenOpen) ;
+TMT_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ;
 TMT_QName:   QName   -> type(QName);  // AtomicOrUnionType
 TMT_Comma:  ','  -> type(Comma), pushMode(SEQUENCE_TYPE); // come back here
 TMT_ParenClose:  ')' -> type(ParenClose),popMode;
 
 mode TYPED_ARRAY_TEST;
-TAT_ParenOpen:  '('  -> type(ParenOpen), pushMode(SEQUENCE_TYPE); // come back her
+TAT_ParenOpen:  '('  -> type(ParenOpen), pushMode(SEQUENCE_TYPE); // come back here
 TAT_ParenClose:  ')' -> type(ParenClose),popMode;
 
 
@@ -741,8 +752,8 @@ NK_Comma:     ','         -> type(Comma);
 NK_NameSpace: 'namespace' -> type(Namespace); // SchemaPrefix:
 NK_Equals:    '='         -> type(SymEquals); // SchemaPrefix:
 NK_At:        'at'        -> type(At); // SchemaImport:
-NK_QuotAttr:  '"'         -> type(QuotStart),pushMode(QUOT_COMMON_CONTENT);
-NK_AposAttr:  '\''        -> type(AposStart),pushMode(APOS_COMMON_CONTENT);
+NK_Quot:       '"'         -> type(QuotStart),pushMode(QUOT_COMMON_CONTENT);
+NK_Apos:       '\''        -> type(AposStart),pushMode(APOS_COMMON_CONTENT);
 NK_NCName:    NCName      -> type(NCName);    // ( lowest priority  )  SchemaPrefix:
 Nk_Separator: ';'         -> type(Separator), popMode; 
 
@@ -762,18 +773,25 @@ ND_NCName: NCName -> type(NCName);
 ND_Separator: ';' -> type(Separator), popMode; // back to default
 
 mode ITEM_TYPE;
-IT_Return: 'return'        -> type(Return), mode(DEFAULT_MODE); // Same Stack Transition;
+IT_Return: 'return'        -> type(Return), mode(DEFAULT_MODE); 
 
 mode ANNOTATION;
-AN_WS: WS -> channel(HIDDEN);
-// AN_EQNamePop: EQName ~'(' -> type(EQName),popMode;
-AN_EQName: QName -> type(QName);
-AN_ParenOpen: '(' -> type(ParenOpen);
-AN_COMMA:      ',' -> type(Comma);
-AN_QuotAttr:  '"'    -> type(QuotStart),pushMode(QUOT_COMMON_CONTENT);
-AN_AposAttr:  '\''    -> type(AposStart),pushMode(APOS_COMMON_CONTENT);
-//AN_Literal: Literal -> type(Literal) ;
-AN_ParenClose: ')' -> type(ParenClose),popMode;
+ANNO_WS: WS -> channel(HIDDEN);
+// ANNO_QName: QName -> type(QName);
+ANNO_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ;
+ANNO_QName: QName -> type(QName);
+ANNO_POpen:  '('  -> type(ParenOpen);
+ANNO_PClose: ')' -> type(ParenClose),popMode;
+LIT_Comma:   ','  -> type(Comma);
+LIT_Quot:    '"'  -> type(QuotStart),pushMode(QUOT_COMMON_CONTENT);
+LIT_Apos:    '\'' -> type(AposStart),pushMode(APOS_COMMON_CONTENT);
+LIT_IntegerLiteral: IntegerLiteral -> type(IntegerLiteral) ; 
+LIT_DecimalLiteral: DecimalLiteral -> type(DecimalLiteral) ;
+LIT_DoubleLiteral:  DoubleLiteral  -> type(DecimalLiteral); 
+
+
+
+
 
 mode START_TAG;   // inside a tag
 TagEmptyClose: '/>' ->  popMode;   
