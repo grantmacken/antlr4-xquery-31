@@ -1,6 +1,8 @@
 SHELL=/bin/bash
 
-CP := /usr/local/lib/antlr-4.7.1-complete.jar:$$CLASSPATH
+LIB_PATH := /usr/local/lib
+JAR := antlr-4.7.1-complete.jar
+CP := $(LIB_PATH)/$(JAR):$$CLASSPATH
 GRUN   := java -Xmx500M -cp "$(CP)" org.antlr.v4.runtime.misc.TestRig
 TOKENS := XQuery module -tokens -trace ../fixtures/
 TREE   := XQuery module -tree ../fixtures/
@@ -29,6 +31,10 @@ default:
 	@cd ./src && java -Xmx500M -cp "$(CP)" org.antlr.v4.Tool XQueryLexer.g4 -o ../build
 	@cd ./src && java -Xmx500M -cp "$(CP)" org.antlr.v4.Tool XQueryParser.g4 -o ../build
 	@cd build && javac XQuery*.java
+
+.PHONY: before
+before: 
+	@cd $(LIB_PATH) && curl -O https://www.antlr.org/download/antlr-4.7.1-complete.jar
 
 .PHONY: test
 test:
