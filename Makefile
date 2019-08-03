@@ -35,7 +35,8 @@ default:
 .PHONY: before
 before: 
 	@mkdir -p $(LIB_PATH)
-	@cd $(LIB_PATH) &&  wget https://www.antlr.org/download/$(JAR)
+	@wget https://www.antlr.org/download/$(JAR)
+	@ls .
 
 .PHONY: test
 test:
