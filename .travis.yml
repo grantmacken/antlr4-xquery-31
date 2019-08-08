@@ -1,8 +1,6 @@
 dist: bionic
 language: java
-branches:
-  only:
-  - master
+branches: {only: [master]}
 before_install: make before
-install: true
-script: true
+install: make
+script: make test
