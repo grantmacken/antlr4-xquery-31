@@ -30,14 +30,14 @@ show-diag-output =  $(GRUN) $(DIAGNOSTICS)$1.xq
 .PHONY: default
 default: 
 	@mkdir -p build
-	@cd ./src && java -Xmx500M -cp "$(CP)" org.antlr.v4.Tool XQueryLexer.g4 -o ../build
-	@cd ./src && java -Xmx500M -cp "$(CP)" org.antlr.v4.Tool XQueryParser.g4 -o ../build
-	@cd build && javac XQuery*.java
+	@cd ./src && java -jar $(LIB_PATH)/$(JAR) -o ../build
+	@#cd ./src && java -Xmx500M -cp "$(CP)" org.antlr.v4.Tool XQueryParser.g4 -o ../build
+	@#cd build && javac XQuery*.java
 
 .PHONY: before
 before: 
 	@echo $(LIB_PATH)
-	@mkdir -p lib
+	@mkdir -p  $(LIB_PATH)
 	@cd lib && wget https://www.antlr.org/download/$(JAR)
 
 .PHONY: test
