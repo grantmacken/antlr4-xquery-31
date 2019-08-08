@@ -1,7 +1,5 @@
 SHELL=/bin/bash
 
-
-
 LIB_PATH := $(CURDIR)/lib
 JAR := antlr-4.7.1-complete.jar
 CP := $(LIB_PATH)/$(JAR):$$CLASSPATH
@@ -35,12 +33,15 @@ default:
 	@cd src && java -jar $(LIB_PATH)/$(JAR) XQueryParser.g4 -o ../build
 	@ls -al build
 	@cd build && javac XQuery*.java
+	@echo $$CLASSPATH
 
 .PHONY: before
 before: 
 	@echo $(LIB_PATH)
 	@mkdir -p  $(LIB_PATH)
 	@cd lib && wget https://www.antlr.org/download/$(JAR)
+	@export CLASSPATH=".:$(LIB_PATH)/$(JAR):$$CLASSPATH"
+
 
 .PHONY: test
 test:
