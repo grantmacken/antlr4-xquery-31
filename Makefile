@@ -33,15 +33,13 @@ default:
 	@cd src && java -jar $(LIB_PATH)/$(JAR) XQueryParser.g4 -o ../build
 	@ls -al build
 	@cd build && javac -classpath $(LIB_PATH)/$(JAR) XQuery*.java
-	@#echo $$CLASSPATH
+	@ls -al build
 
 .PHONY: before
 before: 
 	@echo $(LIB_PATH)
 	@mkdir -p  $(LIB_PATH)
 	@cd lib && wget https://www.antlr.org/download/$(JAR)
-	@#export CLASSPATH=".:$(LIB_PATH)/$(JAR):$$CLASSPATH"
-
 
 .PHONY: test
 test:

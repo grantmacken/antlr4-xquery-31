@@ -3,4 +3,4 @@ language: java
 branches: {only: [master]}
 before_install: make before
 install: make
-script: true
+script: make test
