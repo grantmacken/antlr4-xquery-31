@@ -37,7 +37,6 @@ default:
 
 .PHONY: before
 before: 
-	@echo $(LIB_PATH)
 	@mkdir -p  $(LIB_PATH)
 	@cd lib && wget https://www.antlr.org/download/$(JAR)
 
@@ -99,6 +98,13 @@ test:
 	@#cd build; $(call test-tokens,TryCatchExprr) 
 	@#echo '3.18 Expressions on SequenceTypes'
 	@#cd build; $(call test-tokens,InstanceofExpr) 
+	@echo '3.7 Comparison Expressions '
+	@cd build; $(call test-tokens,ComparisonExpr) 
+	@cd build; $(call test-tokens,GeneralComparisons) 
+	@cd build; $(call test-tokens,NodeComparisons) 
+	@echo '3.8 Logical Expressions'
+	@cd build; $(call test-tokens,OrExpr) 
+	@cd build; $(call test-tokens,AndExpr) 
 
 
 # ` make show-tokens TEST=VersionDecl '
