@@ -2,5 +2,5 @@ dist: bionic
 language: java
 branches: {only: [master]}
 before_install: make before
-install: true
+install: make
 script: true
