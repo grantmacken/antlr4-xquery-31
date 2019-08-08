@@ -1,6 +1,8 @@
 SHELL=/bin/bash
 
-LIB_PATH := /usr/local/lib
+
+
+LIB_PATH := $(CURDIR)/lib
 JAR := antlr-4.7.1-complete.jar
 CP := $(LIB_PATH)/$(JAR):$$CLASSPATH
 GRUN   := java -Xmx500M -cp "$(CP)" org.antlr.v4.runtime.misc.TestRig
@@ -34,9 +36,9 @@ default:
 
 .PHONY: before
 before: 
-	@mkdir -p $(LIB_PATH)
-	@wget https://www.antlr.org/download/$(JAR)
-	@mv $(JAR) $(LIB_PATH)/
+	@echo $(LIB_PATH)
+	@mkdir -p lib
+	@cd lib && wget https://www.antlr.org/download/$(JAR)
 
 .PHONY: test
 test:
