@@ -34,7 +34,7 @@ default:
 	@cd src && java -jar $(LIB_PATH)/$(JAR) XQueryLexer.g4 -o ../build
 	@cd src && java -jar $(LIB_PATH)/$(JAR) XQueryParser.g4 -o ../build
 	@ls -al build
-	@#cd build && javac XQuery*.java
+	@cd build && javac XQuery*.java
 
 .PHONY: before
 before: 
