@@ -77,9 +77,6 @@ test:
 	@cd build; $(call test-tokens,NamedFunctionRef) 
 	@cd build; $(call test-tokens,InlineFunctionExpr) 
 	@cd build; $(call test-tokens,EnclosedExpr) 
-	@echo '3.2 Postfix Expressions'
-	@cd build; $(call test-tokens,PostfixFilterExpressions) 
-	@cd build; $(call test-tokens,PostfixDynamicFunctionCalls) 
 	@#echo 'TODO UnorderedExpr'
 	@#cd build; $(call test-tokens,UnorderedExpr) 
 	@# clauses
@@ -98,6 +95,20 @@ test:
 	@#cd build; $(call test-tokens,TryCatchExprr) 
 	@#echo '3.18 Expressions on SequenceTypes'
 	@#cd build; $(call test-tokens,InstanceofExpr) 
+	@echo '3.2 Postfix Expressions'
+	@cd build; $(call test-tokens,PostfixFilterExpressions) 
+	@cd build; $(call test-tokens,PostfixDynamicFunctionCalls) 
+	@echo '3.3 Path Expressions TODO'
+	@echo '3.4 Sequence Expressions'
+	@cd build; $(call test-tokens,ConstructingSequences) 
+	@cd build; $(call test-tokens,RangeExpr) 
+	@cd build; $(call test-tokens,UnionExpr) 
+	@echo '3.5 Arithmetic Expressions'
+	@cd build; $(call test-tokens,AdditiveExpr) 
+	@cd build; $(call test-tokens,MultiplicativeExpr) 
+	@cd build; $(call test-tokens,UnaryExpr) 
+	@echo '3.6 String Concatenation Expressions'
+	@cd build; $(call test-tokens,StringConcatExpr) 
 	@echo '3.7 Comparison Expressions '
 	@cd build; $(call test-tokens,ComparisonExpr) 
 	@cd build; $(call test-tokens,GeneralComparisons) 
