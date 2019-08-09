@@ -1,11 +1,5 @@
 
 
-declare 
-function local:f3( $var1 as function(int, int) as int) {
-    'example 1: function(int, int) as int
-    matches any functionwith the function signature function(int, int) )'
-};
-
 
 declare 
 function local:f5( $var1 as function(xs:anyAtomicType) as item()* ) {

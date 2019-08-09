@@ -152,18 +152,13 @@ Namespace:  'namespace' ;    // CompNamespaceConstructor:
 // also in declaration-modes ModuleDecl: SchemaPrefix: ModuleImport: NamespaceDecl: DefaultNamespaceDecl
 Text: 'text' ; //  CompTextConstructor: TextTest:
 Comment: 'comment' ; // CompCommentConstructor CommentTest:
-
 ProcessingInstruction: 'processing-instruction' ; // CompPIConstructor: PITest
-
  // functionItemExpr: namedFunctionRef | inlineFunctionExpr
 Function: 'function' -> pushMode( INLINE_FUNCTION ) ; // InlineFunctionExpr: AnyFunctionTest TypedFunctionTest:
-
 // also in modes FunctionDecl: DefaultNamespaceDecl 
-
          // MapConstructorOpen
 Map:   'map';      // MapConstructor         MapTest/ (AnyMapTest | TypedMapTest)
 Array: 'array' ;  // CurlyArrayConstructor  ArrayTest/ ( AnyArrayTest TypedArrayTest)
-
 StringConstructorOpen:   '``['   -> pushMode( STRING_CONSTRUCTOR );
 // StringConstructorClose @see mode STRING_CONSTRUCTOR 
 // StringConstructorInterpolationOpen @see mode STRING_CONSTRUCTOR
@@ -465,7 +460,6 @@ mode VAR_NAME;  //
 VAR_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),mode( URI_QUALIFIED_NAME ) ; // also pops
 VAR_Name: QName -> type(QName),popMode;
 
-
 mode PARAM_LIST;  // functionDecl InlineFunctionExpr
 PARAM_WS:     WS  -> type(WS),channel(HIDDEN);
 // PL_POpen: '('  -> type(ParenOpen);
@@ -513,7 +507,6 @@ QE_ZeroOrMore: '*'     -> type(OccurrenceIndicator) ;
 QE_OneOrMore:  '+'     -> type(OccurrenceIndicator) ;
 // end TypeDeclaration pattern
 QE_In:         'in'    -> type(In), mode(DEFAULT_MODE); // seek ExprSingle 
-
 
 mode GROUP_BY_CLAUSE; //  
 GROUP_WS: WS  -> type(WS),channel(HIDDEN);
@@ -572,13 +565,10 @@ CATCH_Wildcard:  '*' -> type( Wildcard ) ;
 CATCH_CurlyOpen:  '{'  -> type(CurlyOpen), mode(DEFAULT_MODE) ;  
 // in default '}' will pop off this CATCH_CLAUSE stack
 
-
-
 mode COLLATION;
 COLLATION_WS: WS  -> type(WS),channel(HIDDEN);
 COLLATION_QuotAttr:  '"'   -> type(QuotStart),mode(QUOT_COMMON_CONTENT); // pop back into origin
 COLLATION_AposAttr:  '\''  -> type(AposStart),mode(APOS_COMMON_CONTENT); // pop back into origin
-
 
 mode ENCLOSED_EXPR;
 ENCLOSED_WS: WS  -> type(WS),channel(HIDDEN);
@@ -654,12 +644,12 @@ ST_WS: WS -> type(WS),channel(HIDDEN);
 // ST_Vbar:  '|' -> type(VBar) ;
 EmptySequenceTest: 'empty-sequence' '(' ')'  -> popMode ;
 /* Everything else below is an ItemType  */
-Item:  'item' '(' ')'            ->              popMode ;  // itemType:
-AnyKindTest:   'node'  '(' ')'   ->              popMode  ;  // anyKindTest
-DocumentNode:  'document-node'   ->              popMode  ;    // TODO  kindTest/documentTest
-TextTest:      'text' '(' ')'    ->              popMode  ; //  CompTextConstructor: TextTest:
-CommentTest:   'comment' '(' ')' ->              popMode   ; // CompCommentConstructor CommentTest:
-NamespaceNodeTest: 'namespace-node'  '(' ')'  -> popMode ;   // NamespaceNodeTest
+Item:  'item' '(' ')'            ->             popMode ;  // itemType:
+AnyKindTest:   'node'  '(' ')'   ->             popMode  ;  // anyKindTest
+DocumentNode:  'document-node'   ->             popMode  ;    // TODO  kindTest/documentTest
+TextTest:      'text' '(' ')'    ->             popMode  ; //  CompTextConstructor: TextTest:
+CommentTest:   'comment' '(' ')' ->             popMode   ; // CompCommentConstructor CommentTest:
+NamespaceNodeTest: 'namespace-node'  '(' ')' -> popMode ;   // NamespaceNodeTest
 PITest:    'processing-instruction' -> type(ProcessingInstruction ) ; // TODO  PITest CompPIConstructor: 
 ST_Attribute:    'attribute'        -> type(Attribute), mode(ELEMENT_ATTR_TEST) ;   // AttributeTest: CompAttrConstructor:  ForwardAxis: 
 SchemaAttribute: 'schema-attribute' ->                  mode( SIMPLE_TYPE ) ; // SchemaAttributeTest
@@ -790,32 +780,30 @@ LIT_DecimalLiteral: DecimalLiteral -> type(DecimalLiteral) ;
 LIT_DoubleLiteral:  DoubleLiteral  -> type(DecimalLiteral); 
 
 
-
-
-
 mode START_TAG;   // inside a tag
+TAG_WS:  WS  -> type(WS),channel(HIDDEN);
 TagEmptyClose: '/>' ->  popMode;   
 TagStartClose:  '>'  -> mode(ELEMENT_CONTENT);
 TAG_QName:   QName  -> type(QName);
 TAG_Equals:  '='  -> type(SymEquals);
 AposAttr:   '\''      -> type(AposStart),pushMode(APOS_ATTRIBUTE_CONTENT);
 QuotAttr:   '"'       -> type(QuotStart),pushMode(QUOT_ATTRIBUTE_CONTENT);
-START_TAG_SPACE:  WS  -> type(WS),channel(HIDDEN);
 
 // element content
 mode ELEMENT_CONTENT; 
+EC_SPACE:  WS ->   type(WS),channel(HIDDEN);
 EC_TagEndOpen:    '</'    -> type(TagEndOpen),mode(END_TAG);
 EC_OpenStartTag:  '<' QName -> type(TagStartOpen),pushMode(START_TAG);
-EC_SPACE:  WS  ->   type(WS); //,channel(HIDDEN);
+EC_CurlyOpen: '{' -> type(CurlyOpen),pushMode(DEFAULT_MODE); // pop back here
 ElementContentChar :    ~[<&{}]+ ; // ElementContentChar
 
 // element content
 // When the end tag is terminated, the state is popped to the state 
 // that was pushed at the start of the corresponding start tag.
 mode END_TAG;
+ET_SPACE:  WS  ->   type(WS),channel(HIDDEN);
 ET_QName:   QName   -> type(QName);
 ET_TagEndClose: '>' -> type(TagEndClose),popMode;
-ET_SPACE:  WS  ->   type(WS),channel(HIDDEN);
 
 
 mode APOS_ATTRIBUTE_CONTENT;
@@ -826,7 +814,7 @@ AAC_PredefinedEntityRef: PredefinedEntityRef -> type(PredefinedEntityRef);
 AAC_CharRef: CharRef -> type(CharRef);
 AposAttrContentChar:   ~['&{}]+; //
 AAC_CurlyOpen: '{' -> type(CurlyOpen),pushMode(DEFAULT_MODE); // push, we want to pop back
-AAC_EndApos:  '\'' -> type(AposEnd),mode(START_TAG);
+AAC_EndApos:  '\'' -> type(AposEnd),popMode;
 
 mode QUOT_ATTRIBUTE_CONTENT;
 QAC_EscapeQuot: '""' -> type(EscapeQuot);
@@ -836,6 +824,6 @@ QAC_CharRef: CharRef -> type(CharRef);
 QAC_PredefinedEntityRef: PredefinedEntityRef -> type(PredefinedEntityRef);
 QuoteAttrContentChar:  ~["&{}]+ ; // last
 QAC_CurlyOpen: '{' -> type(CurlyOpen),pushMode(DEFAULT_MODE); // push, we want to pop back
-QAC_EndQuot: '"' -> type(QuotEnd),mode(START_TAG);
+QAC_EndQuot: '"' -> type(QuotEnd),popMode;
 
 

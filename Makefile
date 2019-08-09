@@ -31,9 +31,7 @@ default:
 	@rm -f build/*
 	@cd src && java -jar $(LIB_PATH)/$(JAR) XQueryLexer.g4 -o ../build
 	@cd src && java -jar $(LIB_PATH)/$(JAR) XQueryParser.g4 -o ../build
-	@ls -al build
 	@cd build && javac -classpath $(LIB_PATH)/$(JAR) XQuery*.java
-	@ls -al build
 
 .PHONY: before
 before: 
@@ -60,13 +58,22 @@ test:
 	@cd build; $(call test-tokens,OptionDecl) 
 	@cd build; $(call test-tokens,VarDecl) 
 	@cd build; $(call test-tokens,FunctionDecl) 
-	@# cd build; $(call test-tokens,SchemaElementTest) 
-	@# cd build; $(call test-tokens,ElementTest) 
+	@echo '2.5 Types'
+	@cd build; $(call test-tokens,SequenceType) 
+	@cd build; $(call test-tokens,ElementTest) 
+	@cd build; $(call test-tokens,SchemaElementTest) 
+	@cd build; $(call test-tokens,AttributeTest) 
+	@cd build; $(call test-tokens,SchemaAttributeTest) 
+	@echo 'TODO: incomplete - AnyFunctionTest, TypedFunctionTest'
+	@cd build; $(call test-tokens,AnyFunctionTest) 
+	@cd build; $(call test-tokens,TypedFunctionTest) 
+	@cd build; $(call test-tokens,AnyMapTest) 
+	@cd build; $(call test-tokens,AnyArrayTest) 
+	@cd build; $(call test-tokens,TypedArrayTest) 
+	@cd build; $(call test-tokens,xsError) 
 	@# cd build; $(call test-tokens,PITest) 
-	@# cd build; $(call test-tokens,FunctionTest) 
-	@# cd build; $(call test-tokens,TypedFunctionTest) 
-	@# cd build; $(call test-tokens,AnyMapTest) 
-	@# cd build; $(call test-tokens,AnyArrayTest) 
+	@echo '2.6 Comments'
+	@cd build; $(call test-tokens,Comments) 
 	@echo '3.1 Primary Expressions'
 	@cd build; $(call test-tokens,StringLiteral) 
 	@cd build; $(call test-tokens,NumericLiteral) 
@@ -79,7 +86,6 @@ test:
 	@cd build; $(call test-tokens,EnclosedExpr) 
 	@#echo 'TODO UnorderedExpr'
 	@#cd build; $(call test-tokens,UnorderedExpr) 
-	@# clauses
 	@#cd build; $(call test-tokens,ForClause) 
 	@#cd build; $(call test-tokens,LetClause) 
 	@#cd build; $(call test-tokens,WhereClause) 
@@ -87,12 +93,11 @@ test:
 	@#cd build; $(call test-tokens,GroupByClause) 
 	@#cd build; $(call test-tokens,OrderByClause) 
 	@#cd build; $(call test-tokens,ReturnClause) 
-	@#echo 'Expressions'
 	@#cd build; $(call test-tokens,UnorderedExpr) 
 	@#cd build; $(call test-tokens,IfExpr) 
 	@#cd build; $(call test-tokens,SwitchExpr) 
 	@#cd build; $(call test-tokens,QuantifiedExpr) 
-	@#cd build; $(call test-tokens,TryCatchExprr) 
+	@cd build; $(call test-tokens,TryCatchExprr) 
 	@#echo '3.18 Expressions on SequenceTypes'
 	@#cd build; $(call test-tokens,InstanceofExpr) 
 	@echo '3.2 Postfix Expressions'
@@ -116,6 +121,11 @@ test:
 	@echo '3.8 Logical Expressions'
 	@cd build; $(call test-tokens,OrExpr) 
 	@cd build; $(call test-tokens,AndExpr) 
+	@echo '3.9 Node Constructors'
+	@cd build; $(call test-tokens,DirElemConstructor) 
+	@cd build; $(call test-tokens,CompDocConstructor) 
+	@cd build; $(call test-tokens,CompTextConstructor) 
+	@echo '3.10 String Constructors'
 
 
 # ` make show-tokens TEST=VersionDecl '
