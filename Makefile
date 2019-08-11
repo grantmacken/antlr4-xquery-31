@@ -79,27 +79,39 @@ test:
 	@cd build; $(call test-tokens,NumericLiteral) 
 	@cd build; $(call test-tokens,VarRef) 
 	@cd build; $(call test-tokens,ParenthesizedExpr) 
+	@# '3.1.4 Context Item Expression' 
 	@cd build; $(call test-tokens,ContextItemExpr) 
 	@cd build; $(call test-tokens,FunctionCall) 
 	@cd build; $(call test-tokens,NamedFunctionRef) 
 	@cd build; $(call test-tokens,InlineFunctionExpr) 
 	@cd build; $(call test-tokens,EnclosedExpr) 
-	@#echo 'TODO UnorderedExpr'
-	@#cd build; $(call test-tokens,UnorderedExpr) 
-	@#cd build; $(call test-tokens,ForClause) 
-	@#cd build; $(call test-tokens,LetClause) 
-	@#cd build; $(call test-tokens,WhereClause) 
-	@#cd build; $(call test-tokens,CountClause) 
-	@#cd build; $(call test-tokens,GroupByClause) 
-	@#cd build; $(call test-tokens,OrderByClause) 
-	@#cd build; $(call test-tokens,ReturnClause) 
-	@#cd build; $(call test-tokens,UnorderedExpr) 
-	@#cd build; $(call test-tokens,IfExpr) 
-	@#cd build; $(call test-tokens,SwitchExpr) 
-	@#cd build; $(call test-tokens,QuantifiedExpr) 
-	@cd build; $(call test-tokens,TryCatchExprr) 
-	@#echo '3.18 Expressions on SequenceTypes'
-	@#cd build; $(call test-tokens,InstanceofExpr) 
+	@echo '3.11 Maps and Arrays'
+	@cd build; $(call test-tokens,MapConstructor1) 
+	@cd build; $(call test-tokens,MapConstructor2) 
+	@cd build; $(call test-tokens,SquareArrayConstructor) 
+	@cd build; $(call test-tokens,CurlyArrayConstructor) 
+	@cd build; $(call test-tokens,UnaryLookup) 
+	@echo '3.12 FLWOR Expressions'
+	@cd build; $(call test-tokens,ForClause) 
+	@cd build; $(call test-tokens,LetClause) 
+	@cd build; $(call test-tokens,WhereClause) 
+	@cd build; $(call test-tokens,CountClause) 
+	@cd build; $(call test-tokens,GroupByClause) 
+	@cd build; $(call test-tokens,OrderByClause) 
+	@cd build; $(call test-tokens,ReturnClause) 
+	@echo '3.13 Ordered and Unordered Expressions'
+	@cd build; $(call test-tokens,UnorderedExpr) 
+	@echo '3.14 Conditional Expressions'
+	@cd build; $(call test-tokens,IfExpr) 
+	@echo '3.15 Switch Expression'
+	@# TODO cd build; $(call test-tokens,SwitchExpr) 
+	@echo '3.16 Quantified Expressions'
+	@cd build; $(call test-tokens,QuantifiedExpr) 
+	@echo '3.17 Try/Catch Expressions '
+	@cd build; $(call test-tokens,TryCatchExpr) 
+	@echo '3.18 Expressions on SequenceTypes'
+	@cd build; $(call test-tokens,InstanceofExpr) 
+	@#cd build; $(call test-tokens,TypeswitchExpr) 
 	@echo '3.2 Postfix Expressions'
 	@cd build; $(call test-tokens,PostfixFilterExpressions) 
 	@cd build; $(call test-tokens,PostfixDynamicFunctionCalls) 
@@ -126,6 +138,7 @@ test:
 	@cd build; $(call test-tokens,CompDocConstructor) 
 	@cd build; $(call test-tokens,CompTextConstructor) 
 	@echo '3.10 String Constructors'
+	@cd build; $(call test-tokens,StringConstructor) 
 
 
 # ` make show-tokens TEST=VersionDecl '

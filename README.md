@@ -5,7 +5,7 @@ WIP xQuery 3.1 g4 lexer and grammar files
 This is my very green attempt to construct antlr4 Lexer and Parser files for [xQuery 3.1](https://www.w3.org/TR/xquery-31/).
 
 
-# Tests
+## Tests
 
 I use a simple Makefile to generate build and test.
 
@@ -35,9 +35,41 @@ make show-tokens TEST=VersionDecl
 make show-gui TEST=VersionDecl
 ```
 
-The above example will build, 
+The above example will build,
 then show the tokens produced by the lexer  using the VersionDecl fixture,
 then show the AST tree  produced by the parser
+
+## Lexer Limitations
+
+*let clause* multiple let assignment not recognised in lexer
+
+```xquery
+let $x := $expr1, $y := $expr2
+```
+
+Can use semantically equivelent
+
+```xquery
+let $x := $expr1
+let $y := $expr2
+```
+
+*for clause* multiple 'for' assignment not recognised in lexer
+
+```xquery
+ for $p in fn:doc("parts.xml")/parts/part[color = "Red"],
+      $s in fn:doc("suppliers.xml")/suppliers/supplier
+```
+
+Can use semantically equivelent
+
+```xquery
+ for $p in fn:doc("parts.xml")/parts/part[color = "Red"]
+ for $s in fn:doc("suppliers.xml")/suppliers/supplier
+```
+
+
+*window clauses*  are not recognised in lexer
 
 ## Notes
 

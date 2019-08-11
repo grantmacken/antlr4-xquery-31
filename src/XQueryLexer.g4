@@ -4,6 +4,7 @@ lexer grammar XQueryLexer;
 // take precedence over those defined in normal lexer rules
 
 tokens {
+	VarName,
 	Wildcard,  // '*'
 	EscapeApos,
 	EscapeQuot,
@@ -63,21 +64,22 @@ VarPrefix:   '$'         ->  pushMode( VAR_NAME ) ;   // VarName no whitespace a
 At:          'at' ;  // forBinding contains PositionalVar ...  ref modes 'at' ModuleImport: SchemaImport
 In:          'in' ;        //  ForBinding quantifiedExpr
 
-Greatest:    'greatest';     // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
-Least:       'least';           // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
+// Greatest:    'greatest';     // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
+// Least:       'least';           // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
 Count:       'count';           // CountClause
 Where:       'where';           // WhereClause
-As:          'as' ;       // TypeDeclarationsequenceTypeUnion InlineFunctionExpr:
+As:          'as'   ->  pushMode( SEQUENCE_TYPE )  ;       // TypeDeclarationsequenceTypeUnion InlineFunctionExpr:
 By:          'by' ;       // GroupByClause OrderByClause
 
-Switch:     'switch';      // switchExpr
-Case:       'case';        // switchExpr typeswitchExpr
+Switch:     'switch'       -> pushMode( SWITCH_EXPR ) ; //-> mode( PARENTHESIZED_EXPR ) ; // switchExpr
+Typeswitch: 'typeswitch'   -> mode( TYPESWITCH_EXPR ) ; //-> mode( PARENTHESIZED_EXPR ) ; // typeswitchExpr
+Case:       'case'         -> pushMode( CASE_CLAUSE );        // switchExpr typeswitchExpr
+
 Default:    'default'  ;   // switchExpr  typeswitchExpr
-Typeswitch: 'typeswitch' ; // typeswitchExpr
 Return:     'return' ;     // switchExpr  typeswitchExpr
 
-If:         'if';         //ifExpr
-Then:       'then';       //ifExpr
+If:         'if'         -> pushMode( IF_EXPR );         //ifExpr
+//Then:       'then';       // in mode Expr
 Else:       'else';       //ifExpr
 
 Try:   'try'   ->   pushMode( ENCLOSED_EXPR ); // tryCatchExpr
@@ -87,7 +89,12 @@ Catch: 'catch' ->   pushMode( CATCH_CLAUSE );  // tryCatchExpr
 Or:   'or';   // orExpr
 And:  'and';  /// andExpr
 
+
+Ques:  '?'  -> pushMode( LOOKUP_KEYSPECIFIER );  //  also ref in CastExpr CastableExpr
+Arrow: '=>' -> pushMode( ARROW_FUNCTION_SPECIFIER ); // arrowExpr
+
 TagStartOpen: '<' QName ->pushMode(START_TAG);
+
 // COMPARISON EXPRESSIONS
 // -------------
 // Node Comparison 
@@ -135,7 +142,6 @@ Instance: 'instance'    -> mode( INSTANCE ) ;     // instanceofExpr
 Treat:    'treat'       -> pushMode( INSTANCE ) ; // treatExpr
 Castable: 'castable'    -> pushMode( AS_TYPE_NAME ) ;  // castableExpr
 Cast:     'cast'        -> pushMode( AS_TYPE_NAME ) ;  // castExpr
-Arrow:      '=>';             // arrowExpr
 Validate:   'validate'  -> pushMode( VALIDATE_EXPR ) ;     //  TODO validateExpr
 Ordered:    'ordered'   -> pushMode( ENCLOSED_EXPR );  // orderedExpr   also in mode PROLOG OrderingModeDecl
 Unordered:  'unordered' -> pushMode( ENCLOSED_EXPR );  // unorderedExpr also in mode PROLOG OrderingModeDecl
@@ -157,13 +163,15 @@ ProcessingInstruction: 'processing-instruction' ; // CompPIConstructor: PITest
 Function: 'function' -> pushMode( INLINE_FUNCTION ) ; // InlineFunctionExpr: AnyFunctionTest TypedFunctionTest:
 // also in modes FunctionDecl: DefaultNamespaceDecl 
          // MapConstructorOpen
-Map:   'map';      // MapConstructor         MapTest/ (AnyMapTest | TypedMapTest)
+Map:   'map';     // MapConstructor         MapTest/ (AnyMapTest | TypedMapTest)
 Array: 'array' ;  // CurlyArrayConstructor  ArrayTest/ ( AnyArrayTest TypedArrayTest)
-StringConstructorOpen:   '``['   -> pushMode( STRING_CONSTRUCTOR );
+StringConstructorOpen:  '``['  -> pushMode( STRING_CONSTRUCTOR );
+StringConstructorClose:  ']``' -> popMode ;
+
 // StringConstructorClose @see mode STRING_CONSTRUCTOR 
 // StringConstructorInterpolationOpen @see mode STRING_CONSTRUCTOR
-StringConstructorInterpolationOpen: '`{'  -> pushMode(DEFAULT_MODE) ;
-StringConstructorInterpolationClose: '}`' -> mode( STRING_CONSTRUCTOR ) ;  // back into STRING_CONSTRUCTOR 
+// StringConstructorInterpolationOpen: '`{'  -> pushMode(DEFAULT_MODE) ;
+StringConstructorInterpolationClose: '}`' -> popMode ;  // back into STRING_CONSTRUCTOR 
 
 SquareOpen: '[';  // SquareArrayConstructor:
 SquareClose: ']';  // SquareArrayConstructor:
@@ -174,23 +182,13 @@ CurlyOpen: '{'  -> pushMode(DEFAULT_MODE); // we want to pop back EnclosedExpr M
 CurlyClose: '}' -> popMode ;               // EnclosedExpr MapConstructor
 // NOTE  also pops back into modes PROLOG (FunctionDecl/EnclosedExpr) , APOS_ATTRIBUTE_CONTENT and APOS_ATTRIBUTE_CONTENT
 
+ParenOpen:  '(' -> pushMode(DEFAULT_MODE) ;  // ParenthesizedExpr
+ParenClose: ')' -> popMode ;                // ParenthesizedExpr
 
-//stringConstructor : '``[' stringConstructorContent ']``' ;
- /* ws: explicit 
- TODO 
- NOTE with ws explict 
- pop into a mode without WS hidden
- then pop back
- */
-
-
-ParenOpen: '('  ;  // ParenthesizedExpr
-ParenClose: ')' ;  // ParenthesizedExpr
 
 Dot:  '.' ; // ContextItemExpr
 Hash: '#' ;
 Anno: '%' ;
-Ques: '?';  // ref:  in CastExpr CastableExpr
 SymAt: '@';        //  AbbrevForwardStep:
 SymBang: '!';     //   SimpleMapExpr:
 Comma: ',';
@@ -253,9 +251,6 @@ NCName : NameStartChar NameChar*;
 //NCNameInternal : (Char* ':' Char*);
 // WHITESPACE
 // S ::= (#x20 | #x9 | #xD | #xA)+
-
-
-
 
 
 
@@ -322,13 +317,7 @@ mode MODULE_DECL;
 MOD_WS: WS -> type(WS),channel(HIDDEN);
 MOD_Namespace: 'namespace' -> type(Namespace),mode(NAMESPACE_KEYWORD); // NamespaceDecl
 
-// whitespace explicit PUSH POP CONSTRUCTORS
-mode STRING_CONSTRUCTOR;  // TODO 
-SC_StringConstructorInterpolationOpen: '`{'  -> type(StringConstructorInterpolationOpen), mode(DEFAULT_MODE);
-// a StringConstructor in a string constuctor so pop onto same stack
-SC_StringConstructorOpen:   '``['  -> type(StringConstructorOpen), pushMode(STRING_CONSTRUCTOR) ; 
-StringConstructorClose:  ']``'   -> popMode ;
-StringConstructorChars: ~[\]{`]+ ;  // TODO  only acknowledge doublebacktick
+
 
 
 // mode PREDEFINED_ENTITY_REF;
@@ -388,9 +377,7 @@ Construction: 'construction'; // ConstructionDecl
 Ordering: 'ordering';   // OrderingModeDecl
 PROLOG_Ordered:   'ordered'   -> type(Ordered);   // OrderingModeDecl
 PROLOG_Unordered: 'unordered' -> type(Unordered); // OrderingModeDecl
-PROLOG_Empty:     'empty'     -> type(Empty);     // EmptyOrderDecl
-PROLOG__Greatest: 'greatest'  -> type(Greatest); // EmptyOrderDecl
-PROLOG_Least:     'least'     -> type(Least);    // EmptyOrderDecl
+PROLOG_Empty:     'empty'     -> type(Empty),pushMode(EMPTY_LIST);     // EmptyOrderDecl
 
 CopyNamespaces: 'copy-namespaces';   // CopyNamespacesDecl
 NoPreserve:    'no-preserve';      // CopyNamespacesDecl  
@@ -536,12 +523,10 @@ GROUP_Return: 'return' ->  type(Return), mode(DEFAULT_MODE);     // ReturnClause
 mode ORDER_BY_CLAUSE;
 ORDER_WS: WS  -> type(WS),channel(HIDDEN);
 ORDER_Oder:  'order'   -> type(By), mode(DEFAULT_MODE); 
-ORDER_By:    'by'   -> type(By),    mode(DEFAULT_MODE);  //  ExprSingle
+ORDER_By:    'by'      -> type(By),    mode(DEFAULT_MODE);  //  ExprSingle
 // we have to pop after by because we a looking for  ExprSingle
 // then if 'ascending' | 'descending' collect
-ORDER_Empty:     'empty'; 
-ORDER_Greatest:  'greatest'; 
-ORDER_Least:     'least'; 
+ORDER_Empty:     'empty' -> type(Empty), pushMode(EMPTY_LIST); 
 ORDER_Collation: 'collation' -> type(Collation), pushMode( COLLATION ) ;    // GroupingSpec OrderModifier
 ORDER_Comma:      ','    -> type(Comma),mode(DEFAULT_MODE);
 // patterns for ending clause
@@ -553,6 +538,11 @@ ORDER_Where:     'where'   ->   type(Where), mode(DEFAULT_MODE);  // WhereClause
 ORDER_Group:     'group'    ->  type(Group), mode(GROUP_BY_CLAUSE);  // GroupByClause:
 ORDER_Count:     'count'   ->   type(Count), mode(DEFAULT_MODE);  // CountClause::
 ORDER_Return:    'return'  ->   type(Return),mode(DEFAULT_MODE);     // ReturnClause:
+
+mode EMPTY_LIST;
+EMPTY_WS: WS         -> type(WS),channel(HIDDEN);
+Greatest: 'greatest' -> popMode; 
+Least:    'least'    -> popMode; 
 
 mode CATCH_CLAUSE; // nameTest
 CATCH_WS: WS  -> type(WS),channel(HIDDEN);
@@ -570,10 +560,52 @@ COLLATION_WS: WS  -> type(WS),channel(HIDDEN);
 COLLATION_QuotAttr:  '"'   -> type(QuotStart),mode(QUOT_COMMON_CONTENT); // pop back into origin
 COLLATION_AposAttr:  '\''  -> type(AposStart),mode(APOS_COMMON_CONTENT); // pop back into origin
 
+
+mode IF_EXPR;
+IF_WS: WS  -> type(WS),channel(HIDDEN);
+IF_Popen:  '('   -> type(ParenOpen), pushMode( DEFAULT_MODE ); // pop back here
+Then:      'then' -> popMode ;
+
+
+mode SWITCH_EXPR;
+SWITCH_WS: WS  -> type(WS),channel(HIDDEN);
+SWITCH_POpen: '('      -> type(ParenOpen), pushMode( DEFAULT_MODE ); // come back here
+SWITCH_case:  'case'   -> type(Case), mode( CASE_CLAUSE );
+
+mode TYPESWITCH_EXPR;
+TYPESWITCH_WS: WS  -> type(WS),channel(HIDDEN);
+TYPESWITCH_POpen: '('      -> type(ParenOpen), pushMode( DEFAULT_MODE ); // come back here
+TYPESWITCH_case:  'case'   -> type(Case), mode( CASE_CLAUSE );
+
+mode CASE_CLAUSE; // TODO also cover SwitchCaseClause SwitchCaseOperand ::=  ExprSingle 
+CASE_WS:      WS       -> type(WS), channel(HIDDEN);
+TYPESWITCH_VarPrefix: '$'    -> type(VarPrefix), pushMode(VAR_NAME); // GroupingVariable:
+TYPESWITCH_As:         'as'    -> type(As), pushMode(SEQUENCE_TYPE); // should pop back here
+TYPESWITCH_Vbar:       '|'    -> type(VBar), pushMode(SEQUENCE_TYPE); // should pop back here
+TYPESWITCH_OnceOrZero: '?'     -> type(OccurrenceIndicator) ;  
+TYPESWITCH_ZeroOrMore: '*'     -> type(OccurrenceIndicator) ;
+TYPESWITCH_OneOrMore:  '+'     -> type(OccurrenceIndicator) ;
+CASE_Return: 'return' -> type(Return), mode( DEFAULT_MODE);  // look for expression
+
+
+
+
+
+// TYPESWITCH_VarPre:  '$'   -> type(VarPrefix), pushMode( VAR_NAME );     // come back here
+
+
 mode ENCLOSED_EXPR;
 ENCLOSED_WS: WS  -> type(WS),channel(HIDDEN);
 ENCLOSED_CurlyOpen:  '{'   -> type(CurlyOpen), mode( DEFAULT_MODE ); // pop back into origin
 // in default '}' will pop off this ENCLOSED_EXPR stack
+
+mode PARENTHESIZED_EXPR;
+PAREN_WS: WS  -> type(WS),channel(HIDDEN);
+PAREN_Open:  '('   -> type(ParenOpen), mode( DEFAULT_MODE ); // pop back into originM
+// in default ')' will pop off this PARENTHESIZED_EXPR stack
+
+
+
 
 mode INLINE_FUNCTION;  // PrimaryExpr/FunctionItemExpr ( InlineFunctionExpr )
 IFUNC_WS:     WS  -> type(WS),channel(HIDDEN);
@@ -664,8 +696,6 @@ ST_Array:  'array'   ->                    type(Array), mode(TYPED_ARRAY_TEST) ;
 // TODO ParenthesizedItemType
 ST_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),mode( URI_QUALIFIED_NAME ) ; // like QName will pop out
 ST_QName:  QName   -> type(QName), popMode ;                                // ItemType/AtomicOrUnionType
-
-
 
 mode ELEMENT_ATTR_TEST;
 EAT_WS: WS -> type(WS),channel(HIDDEN);
@@ -779,6 +809,7 @@ LIT_IntegerLiteral: IntegerLiteral -> type(IntegerLiteral) ;
 LIT_DecimalLiteral: DecimalLiteral -> type(DecimalLiteral) ;
 LIT_DoubleLiteral:  DoubleLiteral  -> type(DecimalLiteral); 
 
+/* XML constructors */
 
 mode START_TAG;   // inside a tag
 TAG_WS:  WS  -> type(WS),channel(HIDDEN);
@@ -805,7 +836,6 @@ ET_SPACE:  WS  ->   type(WS),channel(HIDDEN);
 ET_QName:   QName   -> type(QName);
 ET_TagEndClose: '>' -> type(TagEndClose),popMode;
 
-
 mode APOS_ATTRIBUTE_CONTENT;
 AAC_EscapeApos : '\'\''-> type(EscapeApos) ;
 AAC_DoubleCurlyOpen: '{{' -> type(DoubleCurlyOpen);
@@ -825,5 +855,27 @@ QAC_PredefinedEntityRef: PredefinedEntityRef -> type(PredefinedEntityRef);
 QuoteAttrContentChar:  ~["&{}]+ ; // last
 QAC_CurlyOpen: '{' -> type(CurlyOpen),pushMode(DEFAULT_MODE); // push, we want to pop back
 QAC_EndQuot: '"' -> type(QuotEnd),popMode;
+
+
+// whitespace explicit PUSH POP CONSTRUCTORS
+mode STRING_CONSTRUCTOR;  // TODO 
+StringConstructorInterpolationOpen: '`{' ->  pushMode(DEFAULT_MODE);
+SC_StringConstructorClose:          ']``'   -> type(StringConstructorClose),popMode ;
+StringConstructorChars: ~[\]{`]+ ;  // TODO  only acknowledge doublebacktick
+
+
+mode LOOKUP_KEYSPECIFIER; 
+LOOKUP_IntegerLiteral: IntegerLiteral -> type(IntegerLiteral),popMode ;
+LOOKUP_Popen:          '('            -> type(ParenOpen), popMode ;
+LOOKUP_Wildcard:       '*'            -> type(Wildcard), popMode ;
+LOOKUP_NCName:         NCName         -> type(NCName),popMode ;
+
+
+mode ARROW_FUNCTION_SPECIFIER;
+ARROW_Popen:          '('            -> type(ParenOpen), popMode ;
+ARROW_VarName: VarPrefix QName -> type( VarName ) ;
+ARROW_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ;
+ARROW_QName: QName -> type(QName);
+
 
 

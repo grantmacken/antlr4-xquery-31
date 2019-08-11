@@ -230,7 +230,6 @@ argument:     exprSingle | Ques ;
 predicateList : predicate* ;
 predicate : SquareOpen expr SquareClose ; // PostfixExpr
 lookup : Ques keySpecifier ;   // PostfixExpr
-
 keySpecifier : NCName | IntegerLiteral | parenthesizedExpr | Wildcard ; //Lookup UnaryLookup
 
 // end xPath related
@@ -311,11 +310,26 @@ mapValueExpr : exprSingle ;
 arrayConstructor : squareArrayConstructor | curlyArrayConstructor ;
 squareArrayConstructor : SquareOpen  (exprSingle ( Comma exprSingle)*)? SquareClose ;
 curlyArrayConstructor : Array CurlyOpen  expr? CurlyClose  ; 
-stringConstructor : StringConstructorOpen stringConstructorContent StringConstructorClose  /* ws: explicit */ ;
+
+
+/*
+StringConstructor 	   ::=    	"``[" StringConstructorContent "]``" 
+StringConstructorChars (StringConstructorInterpolation StringConstructorChars)* 
+StringConstructorChars 	   ::=    	(Char* - (Char* ('`{' | ']``') Char*)) 	
+StringConstructorInterpolation 	   ::=    	"`{" Expr? "}`"
+Differs from above ebnf
+*/
+    //    (stringConstructorInterpolation* 
+    //        stringConstructorChars 
+    //        stringConstructorInterpolation* ) |
+    //        stringConstructorInterpolation
+stringConstructor : StringConstructorOpen stringConstructorContent* StringConstructorClose  ;
 stringConstructorContent : 
-        stringConstructorChars
-        ( stringConstructorInterpolation stringConstructorChars)*
-        ;
+         ( 
+           stringConstructorChars |
+           stringConstructorInterpolation
+           )
+         ;
 stringConstructorChars : StringConstructorChars; /* ws: explicit */
 stringConstructorInterpolation : StringConstructorInterpolationOpen  expr? StringConstructorInterpolationClose ;
 
@@ -389,7 +403,7 @@ functionTest: annotation*
     ( AnyFunctionTest | typedFunctionTest ) ;   // ItemType
  
 typedFunctionTest: Function ParenOpen
-    (sequenceType (Comma sequenceType)*)? 
+    ( sequenceType (Comma sequenceType)* )? 
      ParenClose As sequenceType ; // FunctionTest  
 
 mapTest: AnyMapTest | typedMapTest ;           // ItemType  
