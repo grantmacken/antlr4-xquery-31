@@ -1,0 +1,17 @@
+(
+child::para,
+child::*,
+child::text(),
+child::node(),
+attribute::name,
+attribute::*,
+parent::node(),
+descendant::para,
+ancestor::div,
+ancestor-or-self::div,
+descendant-or-self::para,
+self::para,
+child::chapter/descendant::para,
+child::*/child::para,
+/
+)

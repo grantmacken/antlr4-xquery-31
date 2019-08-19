@@ -356,10 +356,10 @@ itemType:
 atomicOrUnionType : eQName ;
 
 kindTest: 
-      AnyKindTest 
-    | CommentTest
-    | NamespaceNodeTest
-    | TextTest
+      anyKindTest 
+    | commentTest
+    |  namespaceNodeTest
+    | textTest
     | attributeTest
     | documentTest
     | elementTest
@@ -368,9 +368,14 @@ kindTest:
     | schemaElementTest
     ;
 
+anyKindTest: Node ParenOpen ParenClose ;    // KindTest 
+commentTest: Comment ParenOpen ParenClose ; // KindTest 
+textTest:    Text ParenOpen ParenClose ;    // KindTest 
+namespaceNodeTest: NamespaceNode ParenOpen ParenClose ; // KindTest
+
 documentTest:     DocumentNode ParenOpen 
     (elementTest | schemaElementTest)? 
-    ParenClose ;                                        // KindTest  
+    ParenClose ;                                        
 piTest:            ProcessingInstruction ParenOpen 
     (NCName | stringLiteral)? 
     ParenClose ;                                         // KindTest
@@ -426,7 +431,7 @@ stringLiteral:
     ;
 
 uRIQualifiedName: bracedURILiteral NCName;
-bracedURILiteral: BracedURIOpen ( PredefinedEntityRef | BracedURIContent | CharRef )* CurlyClose ;
+bracedURILiteral: BracedURIOpen ( PredefinedEntityRef | BracedURILiteralContent | UriQualifiedNameContent | CharRef )* CurlyClose ;
 
 numericLiteral: IntegerLiteral | DecimalLiteral| DoubleLiteral;	
 varRef: VarPrefix varName;

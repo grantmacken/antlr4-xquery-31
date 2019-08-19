@@ -45,44 +45,47 @@ Module: 'module' -> pushMode(MODULE_DECL);
 // PROLOG  
 Declare: 'declare'  ->  pushMode(PROLOG) ; // BoundarySpaceDecl DefaultCollationDecl: DefaultNamespaceDecl Setter NamespaceDecl 
 Import:  'import'   ->  pushMode(PROLOG) ;
-// FLWORExpr:
-For:       'for'    ->  mode( FOR_CLAUSE ) ; // ForClause
-Let:       'let'    ->  mode( LET_CLAUSE ) ; // LetClause
-Some:      'some'   ->  pushMode( QUANTIFIED_EXPR ) ; // QuantifiedExpr 
-Every:     'every'  ->  pushMode( QUANTIFIED_EXPR ) ; // QuantifiedExpr
-Satisfies: 'satisfies'  ;                              // QuantifiedExpr
-Group:     'group'  ->     mode( GROUP_BY_CLAUSE ) ;      // GroupByClause:
-Collation: 'collation' ->  pushMode( COLLATION ) ;    // GroupingSpec OrderModifier
+// ExprSingle  :=
+// FLWORExpr | QuantifiedExpr | SwitchExpr | TypeswitchExpr| IfExpr| TryCatchExpr| OrExpr
+For:        'for'    ->  mode( FOR_CLAUSE ) ;      // InitialClause ForClause
+Let:        'let'    ->  mode( LET_CLAUSE ) ;      // InitialClause LetClause
+Where:      'where' ;                              // IntermediateClause WhereClause 
+Group:      'group'  ->  mode( GROUP_BY_CLAUSE ) ; // IntermediateClause GroupByClause
+Stable:     'stable' ->  mode( ORDER_BY_CLAUSE ) ; // IntermediateClause OrderByClause
+Order:      'order'  ->  mode( ORDER_BY_CLAUSE ) ; // IntermediateClause OrderByClause
+Count:      'count'  ->  mode( ORDER_BY_CLAUSE ) ; // IntermediateClause CountClause
+Return:     'return' ;                             // ReturnClause switchExpr  typeswitchExpr
+Some:       'some'   ->  mode( QUANTIFIED_EXPR ) ; // QuantifiedExpr 
+Every:      'every'  ->  mode( QUANTIFIED_EXPR ) ; // QuantifiedExpr
+Switch:     'switch' ->  mode( SWITCH_EXPR ) ;     // SwitchExpr
+Typeswitch: 'typeswitch' -> mode( TYPESWITCH_EXPR ) ; // TypeswitchExpr
+If:         'if'         -> mode( IF_EXPR );          // IfExpr
+Try:        'try'        -> mode( ENCLOSED_TRY_TARGET_EXPR ); // tryCatchExpr
+// ExprSingle  -> OrExpr -> ComparisonExpr -> StringConcatExpr 
 
-Stable:     'stable';       // orderByClause
-Order:      'order'      ->   mode( ORDER_BY_CLAUSE ); // orderByClause
+In:        'in' ;                                 // QuantifiedExpr  ForBinding QuantifiedExpr
+Satisfies: 'satisfies'  ;                         // QuantifiedExpr
+Collation: 'collation' ->  pushMode( COLLATION ) ;  // GroupingSpec OrderModifier
+
 Ascending:  'ascending'  ->   mode( ORDER_BY_CLAUSE ); // OrderModifier
 Descending: 'descending' ->   mode( ORDER_BY_CLAUSE ); // OrderModifier:
 Empty:      'empty';           // OrderModifier  ForBinding/AllowingEmpty , also defined in mode PROLOG EmptyOrderDecl
 
 VarPrefix:   '$'         ->  pushMode( VAR_NAME ) ;   // VarName no whitespace after '$'
 At:          'at' ;  // forBinding contains PositionalVar ...  ref modes 'at' ModuleImport: SchemaImport
-In:          'in' ;        //  ForBinding quantifiedExpr
 
 // Greatest:    'greatest';     // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
 // Least:       'least';           // OrderModifier , also defined in mode PROLOG EmptyOrderDecl:
-Count:       'count';           // CountClause
-Where:       'where';           // WhereClause
 As:          'as'   ->  pushMode( SEQUENCE_TYPE )  ;       // TypeDeclarationsequenceTypeUnion InlineFunctionExpr:
 By:          'by' ;       // GroupByClause OrderByClause
 
-Switch:     'switch'       -> pushMode( SWITCH_EXPR ) ; //-> mode( PARENTHESIZED_EXPR ) ; // switchExpr
-Typeswitch: 'typeswitch'   -> mode( TYPESWITCH_EXPR ) ; //-> mode( PARENTHESIZED_EXPR ) ; // typeswitchExpr
 Case:       'case'         -> pushMode( CASE_CLAUSE );        // switchExpr typeswitchExpr
 
 Default:    'default'  ;   // switchExpr  typeswitchExpr
-Return:     'return' ;     // switchExpr  typeswitchExpr
 
-If:         'if'         -> pushMode( IF_EXPR );         //ifExpr
 //Then:       'then';       // in mode Expr
 Else:       'else';       //ifExpr
 
-Try:   'try'   ->   pushMode( ENCLOSED_EXPR ); // tryCatchExpr
 Catch: 'catch' ->   pushMode( CATCH_CLAUSE );  // tryCatchExpr
 
 
@@ -150,15 +153,19 @@ Unordered:  'unordered' -> pushMode( ENCLOSED_EXPR );  // unorderedExpr also in 
 CONSTRUCTORS and Kind Tests
 */
 
-Document:   'document' ;     // CompDocConstructor
-Element:    'element' ;      // CompElemConstructor  ElementTest also in modes for DefaultNamespaceDecl  SchemaImport/SchemaPrefix
+Node:            'node' ; // AnyKindTest:
+Document:        'document' ;     // CompDocConstructor
+Element:         'element' ;      // CompElemConstructor  ElementTest also in modes for DefaultNamespaceDecl  SchemaImport/SchemaPrefix
+SchemaElement:   'schema-element' ; // ( KindTest | DocumentTest ) / SchemaElementTest
+SchemaAttribute: 'schema-attribute' ; // KindTest / SchemaAttributeTest
 // also in declaration-modes SchemaPrefix: DefaultNamespaceDecl:
-Attribute:  'attribute' ;    // CompAttrConstructor:  AttributeTest: ForwardAxis:
 Namespace:  'namespace' ;    // CompNamespaceConstructor: 
-// also in declaration-modes ModuleDecl: SchemaPrefix: ModuleImport: NamespaceDecl: DefaultNamespaceDecl
+// also  in declaration-modes ModuleDecl: SchemaPrefix: ModuleImport: NamespaceDecl: DefaultNamespaceDecl
+DocumentNode: 'document-node' ; // KindTest/DocumentTest
 Text: 'text' ; //  CompTextConstructor: TextTest:
 Comment: 'comment' ; // CompCommentConstructor CommentTest:
-ProcessingInstruction: 'processing-instruction' ; // CompPIConstructor: PITest
+ProcessingInstruction: 'processing-instruction' ; // ( CompPIConstructor | PITest )
+NamespaceNode:         'namespace-node' ;
  // functionItemExpr: namedFunctionRef | inlineFunctionExpr
 Function: 'function' -> pushMode( INLINE_FUNCTION ) ; // InlineFunctionExpr: AnyFunctionTest TypedFunctionTest:
 // also in modes FunctionDecl: DefaultNamespaceDecl 
@@ -200,7 +207,6 @@ IntegerLiteral: Digits;
 DecimalLiteral: (('.' Digits) | (Digits '.' '0'..'9'*)); 
 DoubleLiteral: ('.' Digits | Digits ('.' [0-9]*)?) [eE] [+-]? Digits; 
 PredefinedEntityRef : '&' ( 'lt' | 'gt' | 'amp' | 'quot' | 'apos' ) ';' ;
-// PredefinedEntityRef : '&' -> more;
 
 NCNameWithLocalWildcard:    NCName ':' '*' ;
 NCNameWithPrefixWildcard:   '*' ':' NCName ;
@@ -211,21 +217,22 @@ NCNameWithPrefixWildcard:   '*' ':' NCName ;
 
 // XPATH
 DoubleForwardSlash: '//' ; //PathExpr: RelativePathExpr:
-ForwardSlash:       '/' ;     //PathExpr: RelativePathExpr:
-DoubleColon:        '::' ;               //ForwardAxis
-Child:      'child' ;                    //ForwardAxis
-Descendant: 'descendant' ;               //ForwardAxis
-Self: 'self' ;                           //ForwardAxis
-DescendantOrSelf: 'descendant-or-self' ; //ForwardAxis
-FollowingSibling: 'following-sibling' ;  //ForwardAxis
-Following: 'following' ;                 //ForwardAxis
-Parent: 'parent' ;                       //ReverseAxis
-Ancestor: 'ancestor' ;                   //ReverseAxis
-PrecedingSibling: 'preceding-sibling' ;  //ReverseAxis
-Preceding: 'preceding' ;                 //ReverseAxis
-AncestorOrSelf: 'ancestor-or-self' ;     //ReverseAxis
-
+ForwardSlash:       '/' ;  //PathExpr: RelativePathExpr:
 AbbrevReverseStep : '..';
+// (Axis) -> '::' -> (NodeTest)
+Child:            'child'              -> pushMode( AXIS ) ; // ForwardAxis
+Descendant:       'descendant'         -> pushMode( AXIS ) ; // ForwardAxis
+Attribute:        'attribute'          -> pushMode( AXIS ) ; // ForwardAxis: CompAttrConstructor:  AttributeTest: 
+Self:             'self'               -> pushMode( AXIS ) ; // ForwardAxis
+DescendantOrSelf: 'descendant-or-self' -> pushMode( AXIS ) ; // ForwardAxis
+FollowingSibling: 'following-sibling'  -> pushMode( AXIS ) ; // ForwardAxis
+Following:        'following'          -> pushMode( AXIS ) ; // ForwardAxis
+Parent:           'parent'             -> pushMode( AXIS ) ; // ReverseAxis
+Ancestor:         'ancestor'           -> pushMode( AXIS ) ; // ReverseAxis
+PrecedingSibling: 'preceding-sibling'  -> pushMode( AXIS ) ; // ReverseAxis
+Preceding:        'preceding'          -> pushMode( AXIS ) ; // ReverseAxis
+AncestorOrSelf:   'ancestor-or-self'   -> pushMode( AXIS ) ; // ReverseAxis
+
 
 // Tests
 // order by xquery-31 tokenizer.ebnf
@@ -317,18 +324,17 @@ mode MODULE_DECL;
 MOD_WS: WS -> type(WS),channel(HIDDEN);
 MOD_Namespace: 'namespace' -> type(Namespace),mode(NAMESPACE_KEYWORD); // NamespaceDecl
 
-
-
-
-// mode PREDEFINED_ENTITY_REF;
-// PER_LT: ( 'lt' | 'gt' | 'amp' | 'quot' | 'apos' ) -> more;
-// PER_Sep: ';' -> type(PredefinedEntityRef);
+mode BRACED_URI_LITERAL;  /* ws: explicit */
+BUL_CharRef: CharRef -> type(CharRef);
+BUL_PredefinedEntityRef: PredefinedEntityRef -> type(PredefinedEntityRef) ;
+BracedURILiteralContent: ~[&{}]+ ;
+BUL_CurlyClose: '}' ->  type(CurlyClose),popMode ;
 
 
 mode URI_QUALIFIED_NAME;  /* ws: explicit */
-BRL_CharRef: CharRef -> type(CharRef);
-BRL_PredefinedEntityRef: PredefinedEntityRef -> type(PredefinedEntityRef) ;
-BracedURIContent: ~[&{}]+ ;
+UQN_CharRef: CharRef -> type(CharRef);
+UQN_PredefinedEntityRef: PredefinedEntityRef -> type(PredefinedEntityRef) ;
+UriQualifiedNameContent: ~[&{}]+ ;
 BRL_CurlyClose: '}' ->  type(CurlyClose),mode(NCNAME);
 
 mode NCNAME; /* ws: explicit */
@@ -452,7 +458,6 @@ PARAM_WS:     WS  -> type(WS),channel(HIDDEN);
 // PL_POpen: '('  -> type(ParenOpen);
 PARAM_As: 'as' -> type(As), pushMode(SEQUENCE_TYPE); // should pop back here
 PARAM_VarPrefix: '$' -> type(VarPrefix), pushMode(VAR_NAME);
-//Item:      'item' -> mode( SIMPLE_TYPE ) ;
 PARAM_Comma:  ','  -> type(Comma);
 PARAM_OnceOrZero: '?'  -> type(OccurrenceIndicator) ;  
 PARAM_ZeroOrMore: '*'  -> type(OccurrenceIndicator) ;
@@ -522,7 +527,7 @@ GROUP_Return: 'return' ->  type(Return), mode(DEFAULT_MODE);     // ReturnClause
 
 mode ORDER_BY_CLAUSE;
 ORDER_WS: WS  -> type(WS),channel(HIDDEN);
-ORDER_Oder:  'order'   -> type(By), mode(DEFAULT_MODE); 
+ORDER_Order: 'order'   -> type(Order) ; 
 ORDER_By:    'by'      -> type(By),    mode(DEFAULT_MODE);  //  ExprSingle
 // we have to pop after by because we a looking for  ExprSingle
 // then if 'ascending' | 'descending' collect
@@ -544,28 +549,22 @@ EMPTY_WS: WS         -> type(WS),channel(HIDDEN);
 Greatest: 'greatest' -> popMode; 
 Least:    'least'    -> popMode; 
 
-mode CATCH_CLAUSE; // nameTest
-CATCH_WS: WS  -> type(WS),channel(HIDDEN);
-CATCH_VBar:  '|'     -> type(VBar) ;
-CATCH_QName:         QName -> type(QName) ; 
-CATCH_BracedURIOpen: 'Q{'  -> type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ; // come back here
-CATCH_NCNameWithLocalWildcard:  NCNameWithLocalWildcard  -> type(NCNameWithLocalWildcard);
-CATCH_NCNameWithPrefixWildcard: NCNameWithPrefixWildcard -> type(NCNameWithPrefixWildcard);
-CATCH_Wildcard:  '*' -> type( Wildcard ) ;
-CATCH_CurlyOpen:  '{'  -> type(CurlyOpen), mode(DEFAULT_MODE) ;  
-// in default '}' will pop off this CATCH_CLAUSE stack
+mode COUNT_CLAUSE; // 
+COUNT_WS: WS  -> type(WS),channel(HIDDEN);
+COUNT_VarPrefix: '$'   -> type(VarPrefix);
+COUNT_VarName:   QName -> type(QName), mode(DEFAULT_MODE);
+
+
 
 mode COLLATION;
 COLLATION_WS: WS  -> type(WS),channel(HIDDEN);
 COLLATION_QuotAttr:  '"'   -> type(QuotStart),mode(QUOT_COMMON_CONTENT); // pop back into origin
 COLLATION_AposAttr:  '\''  -> type(AposStart),mode(APOS_COMMON_CONTENT); // pop back into origin
 
-
 mode IF_EXPR;
 IF_WS: WS  -> type(WS),channel(HIDDEN);
 IF_Popen:  '('   -> type(ParenOpen), pushMode( DEFAULT_MODE ); // pop back here
-Then:      'then' -> popMode ;
-
+Then:      'then' -> mode(DEFAULT_MODE) ;
 
 mode SWITCH_EXPR;
 SWITCH_WS: WS  -> type(WS),channel(HIDDEN);
@@ -579,20 +578,44 @@ TYPESWITCH_case:  'case'   -> type(Case), mode( CASE_CLAUSE );
 
 mode CASE_CLAUSE; // TODO also cover SwitchCaseClause SwitchCaseOperand ::=  ExprSingle 
 CASE_WS:      WS       -> type(WS), channel(HIDDEN);
-TYPESWITCH_VarPrefix: '$'    -> type(VarPrefix), pushMode(VAR_NAME); // GroupingVariable:
-TYPESWITCH_As:         'as'    -> type(As), pushMode(SEQUENCE_TYPE); // should pop back here
-TYPESWITCH_Vbar:       '|'    -> type(VBar), pushMode(SEQUENCE_TYPE); // should pop back here
-TYPESWITCH_OnceOrZero: '?'     -> type(OccurrenceIndicator) ;  
-TYPESWITCH_ZeroOrMore: '*'     -> type(OccurrenceIndicator) ;
-TYPESWITCH_OneOrMore:  '+'     -> type(OccurrenceIndicator) ;
-CASE_Return: 'return' -> type(Return), mode( DEFAULT_MODE);  // look for expression
+CASE_VarPrefix: '$'    -> type(VarPrefix), pushMode(VAR_NAME); // GroupingVariable:
+CASE_As:         'as'    -> type(As), pushMode(SEQUENCE_TYPE); // should pop back here
+CASE_Vbar:       '|'    -> type(VBar), pushMode(SEQUENCE_TYPE); // should pop back here
+CASE_OnceOrZero: '?'     -> type(OccurrenceIndicator) ;  
+CASE_ZeroOrMore: '*'     -> type(OccurrenceIndicator) ;
+CASE_OneOrMore:  '+'     -> type(OccurrenceIndicator) ;
+CASE_Return: 'return' -> type(Return), mode( DEFAULT_MODE) ;  // look for expression
+// exprSingle  
+CASE_For:    'for'    ->  type(For), mode( FOR_CLAUSE) ;          // InitialClause
+CASE_Let:    'let'    ->  type(Let), mode( LET_CLAUSE ) ;         // InitialClause
+CASE_Where:  'where'  ->  type(Where), mode( DEFAULT_MODE ) ;     // IntermediateClause WhereClause 
+CASE_Group:  'group'  ->  type(Group), mode( GROUP_BY_CLAUSE ) ;  // IntermediateClause GroupByClause
+CASE_Stable: 'stable' ->  type(Stable), mode( ORDER_BY_CLAUSE ) ; // IntermediateClause OrderByClause
+CASE_Order:  'order'  ->  type(Order), mode( ORDER_BY_CLAUSE ) ;  // IntermediateClause OrderByClause
+CASE_Count:  'count'  ->  type(Count), mode( ORDER_BY_CLAUSE ) ;  //IntermediateClause CountClause
+CASE_Some:   'some'   ->  type(Some), mode( QUANTIFIED_EXPR ) ;   // QuantifiedExpr 
+CASE_Every:  'every'  ->  type(Every), mode( QUANTIFIED_EXPR ) ;  // QuantifiedExpr
+CASE_Switch:     'switch'      -> type(Every),mode( SWITCH_EXPR ) ;          // SwitchExpr
+CASE_Typeswitch: 'typeswitch'  -> type(Typeswitch),mode( TYPESWITCH_EXPR ) ; // TypeswitchExpr
+CASE_If:         'if'         -> type(If),mode( IF_EXPR );                   // IfExpr
+CASE_Try:        'try'        -> type(Try),mode( ENCLOSED_TRY_TARGET_EXPR ); // tryCatchExpr
+CASE_ParenOpen:  '(' -> pushMode(DEFAULT_MODE) ;
+// constructors TODO
+CASE_Document:   'document'  -> type(Document) ,mode(DEFAULT_MODE); 
+CASE_Element:    'element'   -> type(Element), mode(DEFAULT_MODE);  
+CASE_Attribute:  'attribute' -> type(Attribute), mode(DEFAULT_MODE);
+CASE_Namespace:  'namespace' -> type(Namespace), mode(DEFAULT_MODE);
+CASE_Text:       'text'      -> type(Text), mode(DEFAULT_MODE);
+CASE_Comment:    'comment'   -> type(Comment),mode(DEFAULT_MODE);
+CASE_PI:         'processing-instruction' -> type(Every),mode(DEFAULT_MODE);
+CASE_QuotStart:  '"'  -> type(QuotStart), pushMode(QUOT_COMMON_CONTENT);
+CASE_AposStart:  '\'' -> type(AposStart), pushMode(APOS_COMMON_CONTENT);
+CASE_IntegerLiteral: IntegerLiteral  -> type(IntegerLiteral), Mode(DEFAULT_MODE);
+CASE_QName: QName  -> type(QName), Mode(DEFAULT_MODE);
 
-
-
-
-
-// TYPESWITCH_VarPre:  '$'   -> type(VarPrefix), pushMode( VAR_NAME );     // come back here
-
+mode ENCLOSED_TRY_TARGET_EXPR;
+TRY_WS: WS  -> type(WS),channel(HIDDEN);
+TRY_CurlyOpen:  '{'   -> type(CurlyOpen), pushMode( DEFAULT_MODE );
 
 mode ENCLOSED_EXPR;
 ENCLOSED_WS: WS  -> type(WS),channel(HIDDEN);
@@ -671,22 +694,22 @@ referenced by:
     TypedFunctionTest   OK if contained in FunctionDecl otherwise Not OK  
     TypedMapTest        OK ')'
 */
-mode SEQUENCE_TYPE;  // as SequenceType:
+mode SEQUENCE_TYPE;  // TODO dup AXIS as SequenceType:
 ST_WS: WS -> type(WS),channel(HIDDEN);
 // ST_Vbar:  '|' -> type(VBar) ;
 EmptySequenceTest: 'empty-sequence' '(' ')'  -> popMode ;
 /* Everything else below is an ItemType  */
 Item:  'item' '(' ')'            ->             popMode ;  // itemType:
 AnyKindTest:   'node'  '(' ')'   ->             popMode  ;  // anyKindTest
-DocumentNode:  'document-node'   ->             popMode  ;    // TODO  kindTest/documentTest
+ST_DocumentNode:  'document-node'   ->          type(DocumentNode),popMode  ;    // TODO  kindTest/documentTest
 TextTest:      'text' '(' ')'    ->             popMode  ; //  CompTextConstructor: TextTest:
 CommentTest:   'comment' '(' ')' ->             popMode   ; // CompCommentConstructor CommentTest:
-NamespaceNodeTest: 'namespace-node'  '(' ')' -> popMode ;   // NamespaceNodeTest
+ST_NSNode:   'namespace-node' -> type(NamespaceNode),   mode(TEST_SIMPLE) ;
 PITest:    'processing-instruction' -> type(ProcessingInstruction ) ; // TODO  PITest CompPIConstructor: 
 ST_Attribute:    'attribute'        -> type(Attribute), mode(ELEMENT_ATTR_TEST) ;   // AttributeTest: CompAttrConstructor:  ForwardAxis: 
-SchemaAttribute: 'schema-attribute' ->                  mode( SIMPLE_TYPE ) ; // SchemaAttributeTest
+ST_SchemaAttribute: 'schema-attribute' ->  mode( ELEMENT_ATTR_DECLARATION ) ; // SchemaAttributeTest
 ElementTest:     'element'          ->   type(Element), mode(ELEMENT_ATTR_TEST) ;  // KindTest  DocumentTest CompElemConstructo SchemaPrefix DefaultNamespaceDecl:
-SchemaElement:   'schema-element'   ->                  mode( SIMPLE_TYPE ) ;   // DocumentTest KindTest
+ST_SchemaElement:   'schema-element'   ->                  mode( ELEMENT_ATTR_DECLARATION ) ;   // DocumentTest KindTest
 AnyFunctionTest: 'function' '(' '*' ')'  ->             popMode ;       // -> type(Function), pushMode(TYPED_FUNCTION_TEST) ; 
 AnyMapTest:      'map' '(' '*' ')'       ->             popMode ;
 AnyArrayTest:    'array' '(' '*' ')'     ->             popMode ;
@@ -697,23 +720,8 @@ ST_Array:  'array'   ->                    type(Array), mode(TYPED_ARRAY_TEST) ;
 ST_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),mode( URI_QUALIFIED_NAME ) ; // like QName will pop out
 ST_QName:  QName   -> type(QName), popMode ;                                // ItemType/AtomicOrUnionType
 
-mode ELEMENT_ATTR_TEST;
-EAT_WS: WS -> type(WS),channel(HIDDEN);
-EAT_ParenOpen:  '('  -> type(ParenOpen);
-EAT_Wildcard:   '*'  -> type(Wildcard);
-EAT_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ; // come back here
-EAT_QName:    QName  -> type(QName); 
-EAT_Comma:       ',' -> type(Comma) ;
-ElementTypeName: '?' -> type(Ques) ;  /// https://www.w3.org/TR/xquery-31/#doc-xquery31-ElementTest
-EAT_ParenClose:  ')' -> type(ParenClose), popMode;
 
-mode SIMPLE_TYPE;  // as SequenceType:
-SIMPLE_ParenOpen:  '('  -> type(ParenOpen);
-//SIMPLE_Wildcard:   '*'  -> type(Wildcard);
-SIMPLE_QName:   QName   -> type(QName); // TypedMapTest SchemaAttributeTest:
-SIMPLE_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ; // come back here
-SIMPLE_ParenClose:  ')' -> type(ParenClose), popMode ;
-// will pop backe to  PARAM_LIST 
+
 
 ///as 'function' '(' ( SequenceType ( ',' SequenceType )* )? ')' 'as' SequenceType
 mode TYPED_FUNCTION_TEST;  // as SequenceType:
@@ -868,14 +876,123 @@ mode LOOKUP_KEYSPECIFIER;
 LOOKUP_IntegerLiteral: IntegerLiteral -> type(IntegerLiteral),popMode ;
 LOOKUP_Popen:          '('            -> type(ParenOpen), popMode ;
 LOOKUP_Wildcard:       '*'            -> type(Wildcard), popMode ;
-LOOKUP_NCName:         NCName         -> type(NCName),popMode ;
+LOOKUP_NCName:         NCName         -> type(NCName),popMode ; 
 
 
-mode ARROW_FUNCTION_SPECIFIER;
-ARROW_Popen:          '('            -> type(ParenOpen), popMode ;
-ARROW_VarName: VarPrefix QName -> type( VarName ) ;
-ARROW_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ;
-ARROW_QName: QName -> type(QName);
+mode ARROW_FUNCTION_SPECIFIER; 
+ARROW_WS:      WS  ->   type(WS),channel(HIDDEN);
+ARROW_Popen:   '(' -> type(ParenOpen), mode( DEFAULT_MODE ) ;  //  ParenthesizedExpr
+ARROW_VarPre:  '$'-> type( VarPrefix ); // VarRef
+ARROW_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ; // EQName
+ARROW_QName: QName -> type(QName), popMode; // EQName 
 
 
 
+// NAME TESTS
+
+
+mode CATCH_CLAUSE; // nameTest
+CATCH_WS: WS  -> type(WS),channel(HIDDEN);
+CATCH_VBar:  '|'     -> type(VBar) ;
+CATCH_QName:         QName -> type(QName) ; 
+// NameTest 
+// start Wildcard Pattern 
+CATCH_BracedURIOpen: 'Q{'  -> type(BracedURIOpen),pushMode( BRACED_URI_LITERAL ) ; // come back here
+CATCH_NCNameWithLocalWildcard:  NCNameWithLocalWildcard  -> type(NCNameWithLocalWildcard);
+CATCH_NCNameWithPrefixWildcard: NCNameWithPrefixWildcard -> type(NCNameWithPrefixWildcard);
+CATCH_Wildcard:  '*' -> type( Wildcard ) ;
+// end Wildcard Pattern 
+CATCH_CurlyOpen:  '{'  -> type(CurlyOpen), mode(DEFAULT_MODE) ;  
+// in default '}' will pop off this CATCH_CLAUSE stack
+
+mode AXIS; // TODO might push pop
+AXIS_WS:      WS  ->   type(WS),channel(HIDDEN);
+DoubleColon:     '::' ;   // ForwardAxis
+// Kind Tests
+AXIS_DocumentNode: 'document-node'    -> type(DocumentNode), mode(DOCUMENT_TEST) ; 
+AXIS_Element:      'element'          -> type(Element),   mode(ELEMENT_ATTR_TEST) ; 
+AXIS_Test:         'text'             -> type(Text),      mode(TEST_SIMPLE) ; 
+AXIS_Attribute:    'attribute'        -> type(Attribute), mode(ELEMENT_ATTR_TEST) ;   // AttributeTest: CompAttrConstructor:  ForwardAxis: 
+AXIS_ScElement:    'schema-element'   -> type(SchemaElement), mode( ELEMENT_ATTR_DECLARATION ) ;
+AXIS_ScAttr:       'schema-attribute' -> type(SchemaAttribute), mode( ELEMENT_ATTR_DECLARATION ) ;
+AXIS_PI:     'processing-instruction' -> type(ProcessingInstruction ), mode( PI_TEST ) ;
+AXIS_Comment:      'comment'          -> type(Comment),   mode(TEST_SIMPLE) ;
+AXIS_nsNode:        'namespace-node'  -> type(NamespaceNode), mode(TEST_SIMPLE) ;
+AXIS_Node:          'node'            -> type(Node),      mode(TEST_SIMPLE) ; 
+// Name Tests 
+// start Wildcard Pattern 
+AXIS_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( BRACED_URI_LITERAL) ; // come back and pick up '*'
+AXIS_NCNameWithLocalWildcard:  NCNameWithLocalWildcard  -> type(NCNameWithLocalWildcard),  popMode ;
+AXIS_NCNameWithPrefixWildcard: NCNameWithPrefixWildcard -> type(NCNameWithPrefixWildcard), popMode ;
+AXIS_Wildcard:      '*'                                 -> type(Wildcard), popMode  ;
+// end Wildcard Pattern 
+AXIS_QName: QName -> type(QName),  popMode ; // also URIQualifiedNam
+AXIS_CurlyOpen:  '{'   -> type(CurlyOpen), mode( DEFAULT_MODE ); // due to CompAttrConstructor:
+
+
+mode ELEMENT_ATTR_DECLARATION;  // as SequenceType:
+SIMPLE_ParenOpen:  '('  -> type(ParenOpen);
+//SIMPLE_Wildcard:   '*'  -> type(Wildcard);
+SIMPLE_QName:   QName   -> type(QName); // TypedMapTest SchemaAttributeTest:
+SIMPLE_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ; // come back here
+SIMPLE_ParenClose:  ')' -> type(ParenClose), popMode ;
+// will pop backe to  PARAM_LIST 
+
+mode TEST_SIMPLE;
+TS_WS:      WS  -> type(WS),channel(HIDDEN);
+TS_Popen :  '(' -> type(ParenOpen) ;
+TS_Pclose : ')' -> type(ParenClose), popMode; 
+
+mode DOCUMENT_TEST;
+DT_WS: WS -> type(WS),channel(HIDDEN);
+DT_ParenOpen: '('         -> type(ParenOpen);
+DT_Element:   'element'   ->   type(Element),   pushMode(ELEMENT_ATTR_TEST) ;  // pop back here
+DT_ScElement: 'schema-element'  -> type(SchemaElement) , mode( ELEMENT_ATTR_DECLARATION ) ;
+DT_ParenClose: ')' -> type(ParenClose), popMode;
+
+mode ELEMENT_ATTR_TEST;
+EAT_WS: WS -> type(WS),channel(HIDDEN);
+EAT_ParenOpen:  '('  -> type(ParenOpen);
+EAT_Wildcard:   '*'  -> type(Wildcard);
+EAT_BracedURIOpen: 'Q{' ->  type(BracedURIOpen),pushMode( URI_QUALIFIED_NAME ) ; // come back here
+EAT_QName:    QName  -> type(QName); 
+EAT_Comma:       ',' -> type(Comma) ;
+ElementTypeName: '?' -> type(Ques) ;  /// https://www.w3.org/TR/xquery-31/#doc-xquery31-ElementTest
+EAT_ParenClose:  ')' -> type(ParenClose), popMode;
+
+mode PI_TEST;
+PIT_WS: WS -> type(WS),channel(HIDDEN);
+PIT_ParenOpen:  '('  -> type(ParenOpen);
+PIT_NCName:  NCName  -> type(NCName);
+PIT_Quot:    '"'  -> type(QuotStart),pushMode(QUOT_COMMON_CONTENT);
+PIT_Apos:    '\'' -> type(AposStart),pushMode(APOS_COMMON_CONTENT);
+PIT_ParenClose:  ')' -> type(ParenClose), popMode;
+
+
+/*
+
+DocumentNode:  'document-node'   ->             popMode  ;    // TODO  kindTest/documentTest
+TextTest:      'text' '(' ')'    ->             popMode  ; //  CompTextConstructor: TextTest:
+CommentTest:   'comment' '(' ')' ->             popMode   ; // CompCommentConstructor CommentTest:
+NamespaceNodeTest: 'namespace-node'  '(' ')' -> popMode ;   // NamespaceNodeTest
+PITest:    'processing-instruction' -> type(ProcessingInstruction ) ; // TODO  PITest CompPIConstructor: 
+ST_Attribute:    'attribute'        -> type(Attribute), mode(ELEMENT_ATTR_TEST) ;   // AttributeTest: CompAttrConstructor:  ForwardAxis: 
+ElementTest:     'element'          ->   type(Element), mode(ELEMENT_ATTR_TEST) ;  // KindTest  DocumentTest CompElemConstructo SchemaPrefix DefaultNamespaceDecl:
+AnyFunctionTest: 'function' '(' '*' ')'  ->             popMode ;       // -> type(Function), pushMode(TYPED_FUNCTION_TEST) ; 
+AnyMapTest:      'map' '(' '*' ')'       ->             popMode ;
+AnyArrayTest:    'array' '(' '*' ')'     ->             popMode ;
+ST_TypedFunctionTest: 'function' ->     type(Function), mode(TYPED_FUNCTION_TEST) ;//  FunctionTest/TypedFunctionTest InlineFunctionExpr
+ST_TypedMapTest:    'map'     ->             type(Map), mode(TYPED_MAP_TEST); // mapTest/TypedMapTest
+ST_Array:  'array'   ->                    type(Array), mode(TYPED_ARRAY_TEST) ;      // arrayTest/TypedArrayTest
+
+
+
+AXIS_TextTest:      'text' '(' ')'    ->             popMode  ; //  CompTextConstructor: TextTest:
+CommentTest:   'comment' '(' ')' ->             popMode   ; // CompCommentConstructor CommentTest:
+PITest:    'processing-instruction' -> type(ProcessingInstruction ) ; // TODO  PITest CompPIConstructor: 
+ST_Attribute:    'attribute'        -> type(Attribute), mode(ELEMENT_ATTR_TEST) ;   // AttributeTest: CompAttrConstructor:  ForwardAxis: 
+ElementTest:     'element'          ->   type(Element), mode(ELEMENT_ATTR_TEST) ;  // KindTest  DocumentTest CompElemConstructo SchemaPrefix DefaultNamespaceDecl:
+AnyFunctionTest: 'function' '(' '*' ')'  ->             popMode ;       // -> type(Function), pushMode(TYPED_FUNCTION_TEST) ; 
+AnyMapTest:      'map' '(' '*' ')'       ->             popMode ;
+AnyArrayTest:    'array' '(' '*' ')'     ->             popMode ;
+*/
